@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cálculos y Memoria - Losa Maciza 1D y 2D</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+        body { background: #0f1318; color: #e8ecf1; padding: 18px; font-size: 0.88rem; overflow-y: auto; line-height: 1.5; }
+        
+        .container { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+        .panel-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 2px solid #e0b13a; }
+        .panel-header h2 { font-size: 1.15rem; font-weight: 700; color: #e0b13a; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-norma { background: #1f2937; border: 1px solid #374151; color: #9ca3af; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+
+        .card-seccion { background: #171c23; border: 1px solid #2c3542; border-radius: 8px; padding: 16px; margin-bottom: 15px; }
+        .card-seccion h3 { font-size: 0.95rem; font-weight: 700; color: #e8ecf1; margin-bottom: 14px; border-left: 4px solid #e0b13a; padding-left: 10px; text-transform: uppercase; }
+
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+        .grupo-input { display: flex; flex-direction: column; gap: 4px; }
+        .grupo-input label { font-size: 0.78rem; color: #8b97a7; font-weight: 600; }
+        .grupo-input .formula-lbl { font-size: 0.72rem; color: #e0b13a; font-family: monospace; }
+        
+        .input-wrapper { display: flex; align-items: center; gap: 6px; }
+        .input-wrapper input, .input-wrapper select { background: #0f1318; border: 1px solid #2c3542; color: #e8ecf1; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; width: 100%; outline: none; }
+        .input-wrapper input[readonly] { background: #131820; color: #e0b13a; font-weight: 700; border-color: #2a3442; cursor: not-allowed; }
+
+        .paso-calculo { background: #0f1318; border: 1px solid #222c3a; border-radius: 6px; padding: 14px; margin-bottom: 12px; }
+        .paso-titulo { font-weight: 700; color: #e0b13a; font-size: 0.88rem; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+        .ref-norma { font-size: 0.72rem; color: #6b7280; font-weight: 600; background: #171c23; padding: 3px 6px; border-radius: 3px; border: 1px solid #2c3542; text-align: right; white-space: nowrap; }
+        
+        .paso-formula { font-family: 'Consolas', 'Courier New', Courier, monospace; color: #b0b8c4; background: #141a22; padding: 12px; border-radius: 4px; margin: 8px 0; border-left: 3px solid #3b82f6; line-height: 1.8; font-size: 0.82rem; overflow-x: auto; }
+        .paso-formula strong { color: #e8ecf1; font-weight: 700; }
+        .paso-formula .highlight { color: #e0b13a; font-weight: bold; }
+        .paso-formula .critico { color: #ef4444; font-weight: bold; }
+        .paso-formula .ok { color: #10b981; font-weight: bold; }
+
+        /* Clases solicitadas para formato de ecuaciones */
+        .calc-name { color: #93c5fd; font-weight: bold; }
+        .calc-ref { color: #e0b13a; font-weight: bold; }
+
+        .tag-status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+        .tag-ok { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .tag-alert { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .tag-info { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+        table.tabla-verif { width: 100%; border-collapse: collapse; font-size: 0.81rem; margin-top: 8px; margin-bottom: 10px; }
+        table.tabla-verif th, table.tabla-verif td { padding: 8px 10px; border: 1px solid #2c3542; text-align: left; }
+        table.tabla-verif th { background: #161d26; color: #93c5fd; font-weight: 700; text-transform: uppercase; font-size: 0.74rem; }
+        table.tabla-verif td.num { text-align: center; font-family: 'Consolas', monospace; }
+
+        .alerta-sin-datos { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 0.85rem; }
+        
+        .losa-accordion { margin-bottom: 20px; border: 1px solid #2c3542; border-radius: 8px; overflow: hidden; }
+        .losa-header { background: #1a202c; padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .losa-header:hover { background: #2d3748; }
+        .losa-title { font-weight: 700; color: #e0b13a; font-size: 1.02rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .losa-content { padding: 16px; background: #0f1318; display: block; border-top: 1px solid #2c3542; }
+        .losa-content.hidden { display: none; }
+        .icon-toggle { transition: transform 0.3s; }
+        .icon-toggle.rotated { transform: rotate(180deg); }
+        
+        .global-params { background: #1a202c; border: 1px solid #374151; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+        .global-params h3 { color: #60a5fa; margin-bottom: 15px; border-left: 4px solid #60a5fa; padding-left: 10px; font-size: 0.95rem; text-transform: uppercase; }
+        
+        .resumen-hmin { background: #171c23; border: 1px dashed #e0b13a; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .hmin-critico { font-size: 1.4rem; font-weight: bold; color: #e0b13a; margin: 10px 0; }
+        
+        .tabla-resumen-losas { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.83rem; }
+        .tabla-resumen-losas th, .tabla-resumen-losas td { padding: 8px 10px; text-align: center; border: 1px solid #374151; }
+        .tabla-resumen-losas th { background: #2d3748; color: #e8ecf1; font-weight: 600; }
+        .tabla-resumen-losas td { background: #1a202c; color: #cbd5e0; }
+        .tabla-resumen-losas tr.critico td { background: rgba(239, 68, 68, 0.12); color: #fca5a5; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="panel-header">
+            <h2>Memoria de Cálculo: Losa Maciza en Una (1D) y Dos Direcciones (2D)</h2>
+            <span class="badge-norma">NSR-10 Título C / ACI 318-25</span>
+        </div>
+
+        <div id="banner-alerta" class="alerta-sin-datos" style="display: none;"></div>
+        
+        <div id="contenedor-calculos" style="display: none;">
+            
+            <!-- VERIFICACIÓN GLOBAL DEL MÉTODO DE COEFICIENTES (APLICA A TODAS LAS LOSAS 1D DEL SISTEMA) -->
+            <div id="panel-coeficientes-1d-global" class="global-params" style="display: none;">
+                <h3>Verificación Global del Método de Coeficientes (Sistema de Losas Macizas en Una Dirección - 1D)</h3>
+                <div class="paso-calculo" style="background: #0f1318; border-color: #2c3542; margin-bottom: 0;">
+                    <div class="paso-titulo" style="color: #60a5fa;">
+                        <span>Condiciones de Aplicabilidad del Método Simplificado de Coeficientes para Todo el Sistema 1D</span>
+                        <span class="ref-norma">ACI 318-25 6.5.1 / NSR-10 C.8.3.3</span>
+                    </div>
+                    <p style="font-size: 0.82rem; color: #8b97a7; margin-bottom: 8px;">
+                        Evaluación conjunta de todas las losas macizas que trabajan en <strong>Una Dirección (1D)</strong> dentro de la estructura (continuidad de tramos, relación de luces adyacentes $L_{máx}/L_{mín} \le 1.2$, uniformidad de cargas y relación $L \le 3D$).
+                    </p>
+                    <div id="contenedor-tabla-coeficientes-global"></div>
+                    <div class="paso-formula" id="txt-dictamen-coeficientes-global" style="margin-top: 8px;"></div>
+                </div>
+            </div>
+
+            <!-- PARÁMETROS GLOBALES -->
+            <div id="panel-global" class="global-params">
+                <h3>Parámetros Geométricos Globales de Losa Maciza (Aplican a todas las losas)</h3>
+                
+                <div class="paso-calculo" style="background: #0f1318; border-color: #2c3542;">
+                    <div class="paso-titulo" style="color: #60a5fa;">
+                        <span>Clasificación Biaxial y Verificación General de Espesor Mínimo (h<sub>mín</sub>)</span>
+                        <span class="ref-norma">NSR-10 C.9.5.2 y C.9.5.3 / ACI 318-25 7.3.1 y 8.3.1</span>
+                    </div>
+                    <p style="font-size: 0.82rem; color: #8b97a7; margin-bottom: 10px;">
+                        Cada losa se clasifica según su relación de aspecto <strong>&beta; = L<sub>larga</sub> / L<sub>corta</sub></strong> (NSR-10 C.8.3.3). Si <strong>&beta; &ge; 2.0</strong> (o si es tramo 1D) trabaja en <strong>Una Dirección (1D)</strong>; si <strong>&beta; &lt; 2.0</strong> en paño de 4 nodos trabaja en <strong>Dos Direcciones (2D)</strong>.
+                    </p>
+                    <div id="contenedor-tabla-resumen"></div>
+                </div>
+
+                <div class="grid-inputs">
+                    <div class="grupo-input">
+                        <label for="in-h-global">Espesor Losa Adoptado (h):</label>
+                        <span class="formula-lbl">[ Múltiplo comercial en mm, ej: 150 mm ]</span>
+                        <div class="input-wrapper"><input type="number" id="in-h-global" value="150" step="10" oninput="ejecutarMemoriaMaciza()"></div>
+                    </div>
+                    <div class="grupo-input">
+                        <label for="sel-diametro-global">Diámetro Refuerzo Principal:</label>
+                        <span class="formula-lbl">[ ACI 318-25 20.5.1.3.1: Para cálculo de 'd' ]</span>
+                        <div class="input-wrapper">
+                            <select id="sel-diametro-global" onchange="ejecutarMemoriaMaciza()">
+                                <option value="6.4" data-area="32" data-name="N.º 2">N.º 2 (1/4") - 32 mm²</option>
+                                <option value="9.5" data-area="71" data-name="N.º 3" selected>N.º 3 (3/8") - 71 mm²</option>
+                                <option value="12.7" data-area="129" data-name="N.º 4">N.º 4 (1/2") - 129 mm²</option>
+                                <option value="15.9" data-area="199" data-name="N.º 5">N.º 5 (5/8") - 199 mm²</option>
+                                <option value="19.1" data-area="284" data-name="N.º 6">N.º 6 (3/4") - 284 mm²</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grupo-input">
+                        <label for="sel-diametro-temp-global">Diámetro Ref. Temp / Repartición:</label>
+                        <span class="formula-lbl">[ NSR-10 C.7.12.2.1: A<sub>s,rt</sub> = 0.0018 b h ]</span>
+                        <div class="input-wrapper">
+                            <select id="sel-diametro-temp-global" onchange="ejecutarMemoriaMaciza()">
+                                <option value="6.4" data-area="32" data-name="N.º 2">N.º 2 (1/4") - 32 mm²</option>
+                                <option value="9.5" data-area="71" data-name="N.º 3" selected>N.º 3 (3/8") - 71 mm²</option>
+                                <option value="12.7" data-area="129" data-name="N.º 4">N.º 4 (1/2") - 129 mm²</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grupo-input">
+                        <label for="sel-alfafm-global">Rigidez Relativa Vigas (&alpha;<sub>fm</sub>) [Solo 2D]:</label>
+                        <span class="formula-lbl">[ NSR-10 C.9.5.3.2 / ACI 318-25 Tabla 8.3.1.2 ]</span>
+                        <div class="input-wrapper">
+                            <select id="sel-alfafm-global" onchange="ejecutarMemoriaMaciza()">
+                                <option value="2.5" selected>Caso III: Vigas Rígidas (&alpha;<sub>fm</sub> &gt; 2.0)</option>
+                                <option value="1.0">Caso II: Rigidez Intermedia (0.2 &lt; &alpha;<sub>fm</sub> &le; 2.0)</option>
+                                <option value="0.1">Caso I: Sin Vigas / Placa Plana (&alpha;<sub>fm</sub> &le; 0.2)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="resumen-hmin-global" class="resumen-hmin">
+                <div style="color: #8b97a7; font-size: 0.85rem; text-transform: uppercase; font-weight: bold;">Espesor Mínimo Requerido (h<sub>mín</sub>) más crítico del sistema</div>
+                <div class="hmin-critico" id="val-hmin-critico">Calculando...</div>
+                <div id="txt-hmin-critico" style="font-size: 0.8rem; color: #a0aec0;"></div>
+            </div>
+
+            <!-- CONTENEDOR DINÁMICO DE APÉNDICES POR LOSA -->
+            <div id="contenedor-losas"></div>
+            
+        </div>
+    </div>
+
+    <script>
+        function statusTag(ok) {
+            return ok ? '<span class="tag-status tag-ok">CUMPLE</span>' : '<span class="tag-status tag-alert">NO CUMPLE</span>';
+        }
+
+        function toggleLosa(index) {
+            const content = document.getElementById(`losa-content-${index}`);
+            const icon = document.getElementById(`losa-icon-${index}`);
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.classList.add('rotated');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.remove('rotated');
+            }
+        }
+
+        // Cálculo normativo de Beta1 según NSR-10 C.10.2.7.3 / ACI 318-25 22.2.2.4.3
+        function calcularBeta1Normativo(fc) {
+            let valor = 0.85;
+            let formula = "";
+            let condicion = "";
+            if (fc <= 28) {
+                valor = 0.85;
+                condicion = `17 MPa &le; f'<sub>c</sub> (${fc} MPa) &le; 28 MPa`;
+                formula = `&beta;<sub>1</sub> = 0.85 (Constante para f'<sub>c</sub> &le; 28 MPa)`;
+            } else if (fc < 55) {
+                valor = 0.85 - (0.05 * (fc - 28)) / 7;
+                condicion = `28 MPa &lt; f'<sub>c</sub> (${fc} MPa) &lt; 55 MPa`;
+                formula = `0.85 - 0.05(f'<sub>c</sub> - 28)/7 = 0.85 - 0.05(${fc} - 28)/7 = ${valor.toFixed(4)}`;
+            } else {
+                valor = 0.65;
+                condicion = `f'<sub>c</sub> (${fc} MPa) &ge; 55 MPa (Límite inferior normativo)`;
+                formula = `&beta;<sub>1</sub> = 0.65 (Mínimo normativo para f'<sub>c</sub> &ge; 55 MPa)`;
+            }
+            return { valor, formula, condicion };
+        }
+
+        // Divisor de espesor mínimo para Losas Macizas 1D (NSR-10 Tabla C.9.5(a) / ACI 318-25 Tabla 7.3.1.1)
+        function getDivisorMaciza1D(condApoyo) {
+            if (condApoyo === "SIMP") return 20;
+            if (condApoyo === "UN_EXT") return 24;
+            if (condApoyo === "DOS_EXT") return 28;
+            if (condApoyo === "VOLADIZO") return 10;
+            return 20;
+        }
+
+        function nombreApoyo(condApoyo) {
+            if (condApoyo === "SIMP") return "Simplemente Apoyada (L/20)";
+            if (condApoyo === "UN_EXT") return "Un Extremo Continuo (L/24)";
+            if (condApoyo === "DOS_EXT") return "Ambos Extremos Continuos (L/28)";
+            if (condApoyo === "VOLADIZO") return "En Voladizo (L/10)";
+            return condApoyo;
+        }
+
+        function determinarApoyoHeuristico(losa, todasLasLineas) {
+            if (losa.es2D) return "UN_EXT";
+            let extremosContinuos = 0;
+            if (losa.n1 && losa.n2 && todasLasLineas && losa.lineaId) {
+                let n1ConectaOtras = todasLasLineas.some(l => l.id !== losa.lineaId && (l.n1.id === losa.n1.id || l.n2.id === losa.n1.id));
+                let n2ConectaOtras = todasLasLineas.some(l => l.id !== losa.lineaId && (l.n1.id === losa.n2.id || l.n2.id === losa.n2.id));
+                if (n1ConectaOtras) extremosContinuos++;
+                if (n2ConectaOtras) extremosContinuos++;
+                if (extremosContinuos === 0 && (losa.n1.apoyo === 0 || losa.n2.apoyo === 0)) return "VOLADIZO";
+            }
+            if (extremosContinuos === 0) return "SIMP";
+            if (extremosContinuos === 1) return "UN_EXT";
+            if (extremosContinuos === 2) return "DOS_EXT";
+            return "SIMP";
+        }
+
+        function cargarDatosEstructura() {
+            let configGlobal = {
+                fc: null, fy: null, Ec: null, EcFormula: "4700*raiz(f'c)", Es: 200000,
+                Sw: 0.30, rec: 20, losasIguales: true, combinacion: "1.2D+1.6L", pesoPropio: true,
+                muertas: [], vivas: [], extras: []
+            };
+            let losas = [];
+
+            try {
+                const storedSys = localStorage.getItem('proyectoLosas') || localStorage.getItem('definiciones_sistema');
+                if (storedSys) {
+                    const p = JSON.parse(storedSys);
+                    if (p.fc !== undefined) configGlobal.fc = p.fc;
+                    else if (p.fcPa !== undefined) configGlobal.fc = p.fcPa / 1e6;
+                    if (p.fy !== undefined) configGlobal.fy = p.fy;
+                    else if (p.fyPa !== undefined) configGlobal.fy = p.fyPa / 1e6;
+                    if (p.Ec !== undefined && p.Ec > 0) configGlobal.Ec = p.Ec;
+                    else if (p.EcPa !== undefined && p.EcPa > 0) configGlobal.Ec = p.EcPa / 1e6;
+                    else if (configGlobal.fc) configGlobal.Ec = 4700 * Math.sqrt(configGlobal.fc);
+                    if (p.EcFormula) configGlobal.EcFormula = p.EcFormula;
+                    if (p.Es !== undefined && p.Es > 0) configGlobal.Es = p.Es;
+                    else if (p.EPa !== undefined && p.EPa > 0) configGlobal.Es = p.EPa / 1e6;
+                    if (p.Sw !== undefined) configGlobal.Sw = p.Sw;
+                    else if (p.anchoApoyoM !== undefined) configGlobal.Sw = p.anchoApoyoM;
+                    if (p.rec !== undefined) configGlobal.rec = p.rec;
+                    else if (p.recubrimientoMm !== undefined) configGlobal.rec = p.recubrimientoMm;
+                    if (p.losasIguales !== undefined) configGlobal.losasIguales = p.losasIguales;
+                    if (p.combinacion !== undefined) configGlobal.combinacion = p.combinacion;
+                    if (p.pesoPropio !== undefined) configGlobal.pesoPropio = p.pesoPropio;
+                    if (p.muertas) configGlobal.muertas = p.muertas;
+                    if (p.vivas) configGlobal.vivas = p.vivas;
+                    if (p.extras) configGlobal.extras = p.extras;
+                }
+
+                const storedEstructura = localStorage.getItem('estructura_completa');
+                let lucesGraficas = [];
+                let lineasGraficas = [];
+                
+                if (storedEstructura) {
+                    const est = JSON.parse(storedEstructura);
+                    if (est.losas && Array.isArray(est.losas)) lucesGraficas = est.losas;
+                    if (est.lineas) lineasGraficas = est.lineas;
+                } else {
+                    const fallback = JSON.parse(localStorage.getItem('luces_estructura'));
+                    if (fallback && Array.isArray(fallback)) lucesGraficas = fallback;
+                }
+
+                if (lucesGraficas.length > 0) {
+                    lucesGraficas.forEach((l) => {
+                        let apoyoCond = determinarApoyoHeuristico(l, lineasGraficas);
+                        let L_largo = parseFloat(l.L_largo) || 1.0;
+                        let L_corto = parseFloat(l.L_corto) || L_largo;
+                        let esPaño4Nodos = Boolean(l.es2D);
+                        let betaEjes = esPaño4Nodos ? (L_largo / Math.max(0.1, L_corto)) : 99;
+                        let esBidireccional = esPaño4Nodos && (betaEjes < 2.0);
+
+                        losas.push({
+                            id: l.id || l.label,
+                            label: l.label,
+                            Llarga: L_largo,
+                            Lcorta: L_corto,
+                            es2D: esPaño4Nodos,
+                            esBidireccional: esBidireccional,
+                            betaEjes: betaEjes,
+                            n1: l.n1, n2: l.n2,
+                            lineaId: l.lineaId || null,
+                            apoyoSeleccionado: apoyoCond
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error("Error cargando datos:", e);
+            }
+            return { configGlobal, losas };
+        }
+
+        function generarHTMLLosa(losa, index, configGlobal) {
+            const isGlobal = configGlobal.losasIguales;
+            const displayStyle = isGlobal ? 'display: none;' : '';
+            const badgeTipo = losa.esBidireccional 
+                ? `<span class="tag-status tag-info">LOSA MACIZA 2D (&beta; = ${losa.betaEjes.toFixed(2)} &lt; 2.0)</span>`
+                : `<span class="tag-status tag-ok">LOSA MACIZA 1D (${losa.es2D ? '&beta; = ' + losa.betaEjes.toFixed(2) + ' &ge; 2.0' : 'Tramo 1D'})</span>`;
+
+            let pasosHTML = '';
+            if (!losa.esBidireccional) {
+                pasosHTML = `
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 0: Verificación de Bidireccionalidad y Clasificación del Panel</span>
+                            <span class="ref-norma">NSR-10 C.8.3.3 / ACI 318-25 8.3.1</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p0-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 1: Predimensionamiento (Espesor Mínimo h<sub>mín</sub> y Peralte Efectivo d)</span>
+                            <span class="ref-norma">NSR-10 Tabla C.9.5(a) / ACI 318-25 Tabla 7.3.1.1 y 20.5.1.3.1</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p1-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 2: Avalúo de Cargas Gravitacionales de Servicio (Franja b = 1.00 m)</span>
+                            <span class="ref-norma">NSR-10 Título B (B.3.2 y B.4.2.1)</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p2-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 3: Carga Última Mayorada de Diseño (w<sub>u</sub>)</span>
+                            <span class="ref-norma">NSR-10 B.2.4.2</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p3-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 4: Cálculo de Momentos Últimos (Método de Coeficientes ACI 318-25 6.5)</span>
+                            <span class="ref-norma">NSR-10 C.8.3.3 / ACI 318-25 Tabla 6.5.2</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p4-${index}"></div>
+                        <div id="tb-momentos1d-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 5: Diseño a Flexión (Bloque de Whitney, Factor &beta;<sub>1</sub> y Ductilidad)</span>
+                            <span class="ref-norma">NSR-10 C.10.2.7.3 / ACI 318-25 21.2.1 y 22.2</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p5-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 6: Verificación de Acero Mínimo y Cuantía por Retracción y Temperatura</span>
+                            <span class="ref-norma">NSR-10 C.7.12.2.1 / ACI 318-25 7.6.1.1 y 24.4</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p6-${index}"></div>
+                        <div id="tb-secciones1d-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 7: Selección Comercial del Refuerzo Principal y Transversal (Separación s)</span>
+                            <span class="ref-norma">NSR-10 C.7.6.5 / ACI 318-25 7.7.2.3 y 24.4.3.2</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p7-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 8: Verificación de Resistencia a Cortante en Losa Maciza (&phi;V<sub>c</sub> &ge; V<sub>u</sub>)</span>
+                            <span class="ref-norma">NSR-10 C.11.2.1.1 / ACI 318-25 7.5.3 y 22.5.5.1</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p8-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo" id="panel-deflexion-${index}">
+                        <div class="paso-titulo">
+                            <span>Paso 9: Control de Deflexiones en Servicio (Inercias Desglosadas y Steiner)</span>
+                            <span class="ref-norma">NSR-10 C.9.5.2.3 / ACI 318-25 24.2</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p9-${index}"></div>
+                    </div>
+                `;
+            } else {
+                pasosHTML = `
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 1: Clasificación del Panel (Verificación de Bidireccionalidad)</span>
+                            <span class="ref-norma">NSR-10 C.13.6.1 / ACI 318-25 Cap. 8</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p1-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 2: Luces Libres (l<sub>n1</sub>, l<sub>n2</sub>), Espesor Mínimo (h<sub>mín</sub>) y Peralte en Dos Capas</span>
+                            <span class="ref-norma">NSR-10 C.9.5.3.2 / ACI 318-25 Tabla 8.3.1.2</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p2-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 3 y 4: Avalúo de Cargas Bidireccionales y Carga Última Superficial (w<sub>u</sub>)</span>
+                            <span class="ref-norma">NSR-10 B.3.2, B.4.2.1 y B.2.4.2</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p3-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 5: Verificación de Aplicabilidad (Método Directo / Coeficientes) y Franjas de Diseño</span>
+                            <span class="ref-norma">NSR-10 C.13.6.1 / ACI 318-25 8.10.2 y 8.4.1.5</span>
+                        </div>
+                        <div id="tb-aplicabilidad-${index}"></div>
+                        <div class="paso-formula" id="txt-p5-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 6 y 7: Momento Estático Total (M<sub>0</sub>) y Distribución Longitudinal en Dirección Larga</span>
+                            <span class="ref-norma">NSR-10 C.13.6.2 y C.13.6.3 / ACI 318-14 8.10.3.2 y 8.10.4.1</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p6-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 8: Momento Estático Total (M<sub>0</sub>) y Distribución Longitudinal en Dirección Corta</span>
+                            <span class="ref-norma">NSR-10 C.13.6.2 y C.13.6.3 / ACI 318-14 8.10.3.2 y 8.10.4.1</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p8-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 9: Distribución Transversal de Momentos a Franjas de Columna, Central y Vigas</span>
+                            <span class="ref-norma">NSR-10 C.13.6.4 a C.13.6.6 / ACI 318-14 8.10.5 y 8.10.5.7</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p9-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 10, 11 y 12: Diseño a Flexión Biaxial (&beta;<sub>1</sub>), Acero Mínimo y Separación (s &le; 2h)</span>
+                            <span class="ref-norma">NSR-10 C.10.2.7.3 y C.13.3 / ACI 318-25 8.6.1.1 y 8.7.2.2</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p10-${index}"></div>
+                        <div id="tb-resumen2d-${index}"></div>
+                    </div>
+
+                    <div class="paso-calculo">
+                        <div class="paso-titulo">
+                            <span>Paso 13: Transferencia de Cargas a Vigas, Cortante y Deflexiones (Inercias Desglosadas)</span>
+                            <span class="ref-norma">NSR-10 C.13.6.8, C.11.2.1.1 y C.9.5.2.3</span>
+                        </div>
+                        <div class="paso-formula" id="txt-p13-${index}"></div>
+                    </div>
+                `;
+            }
+
+            return `
+            <div class="losa-accordion">
+                <div class="losa-header" onclick="toggleLosa(${index})">
+                    <div class="losa-title">
+                        <span>APÉNDICE: ${losa.label}</span>
+                        <span style="font-size: 0.82rem; color: #cbd5e1; font-weight: normal;">
+                            (${losa.es2D ? `Panel: ${losa.Llarga.toFixed(2)}m × ${losa.Lcorta.toFixed(2)}m` : `Luz Eje: ${losa.Llarga.toFixed(2)}m`})
+                        </span>
+                        ${badgeTipo}
+                    </div>
+                    <div class="icon-toggle" id="losa-icon-${index}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e0b13a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                </div>
+                
+                <div class="losa-content ${index === 0 ? '' : 'hidden'}" id="losa-content-${index}">
+                    
+                    <div class="card-seccion">
+                        <h3>1. Datos Base Heredados del Sistema (${losa.label})</h3>
+                        <div class="grid-inputs">
+                            <div class="grupo-input">
+                                <label>Luz de Diseño Principal:</label>
+                                <div class="input-wrapper"><input type="text" id="in-Ln-${index}" readonly></div>
+                            </div>
+                            <div class="grupo-input">
+                                <label>Sobrecarga Muerta (D<sub>sup</sub>):</label>
+                                <div class="input-wrapper"><input type="text" id="in-Dsup-${index}" readonly></div>
+                            </div>
+                            <div class="grupo-input">
+                                <label>Carga Viva Nominal (L):</label>
+                                <div class="input-wrapper"><input type="text" id="in-Liva-${index}" readonly></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-seccion">
+                        <h3>2. Configuración de Apoyos y Parámetros Locales</h3>
+                        <div class="grid-inputs">
+                            <div class="grupo-input">
+                                <label for="sel-apoyo-${index}">Condición de Borde / Continuidad:</label>
+                                <span class="formula-lbl">[ Define divisor L/n y reparto de momentos ]</span>
+                                <div class="input-wrapper">
+                                    <select id="sel-apoyo-${index}" onchange="ejecutarMemoriaMaciza()">
+                                        <option value="SIMP" ${losa.apoyoSeleccionado === 'SIMP' ? 'selected' : ''}>Simplemente Apoyada / Aislada</option>
+                                        <option value="UN_EXT" ${losa.apoyoSeleccionado === 'UN_EXT' ? 'selected' : ''}>Un Extremo Continuo (Vano Exterior)</option>
+                                        <option value="DOS_EXT" ${losa.apoyoSeleccionado === 'DOS_EXT' ? 'selected' : ''}>Ambos Extremos Continuos (Vano Interior)</option>
+                                        <option value="VOLADIZO" ${losa.apoyoSeleccionado === 'VOLADIZO' ? 'selected' : ''}>En Voladizo</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grupo-input" style="${displayStyle}">
+                                <label for="in-h-${index}">Espesor Adoptado (h) mm:</label>
+                                <span class="formula-lbl">[ Espesor comercial de losa ]</span>
+                                <div class="input-wrapper"><input type="number" id="in-h-${index}" value="150" step="10" oninput="ejecutarMemoriaMaciza()"></div>
+                            </div>
+                            <div class="grupo-input" style="${displayStyle}">
+                                <label for="sel-diametro-${index}">Diámetro Refuerzo Principal:</label>
+                                <span class="formula-lbl">[ Para cálculo de peralte d ]</span>
+                                <div class="input-wrapper">
+                                    <select id="sel-diametro-${index}" onchange="ejecutarMemoriaMaciza()">
+                                        <option value="6.4" data-area="32" data-name="N.º 2">N.º 2 (1/4") - 32 mm²</option>
+                                        <option value="9.5" data-area="71" data-name="N.º 3" selected>N.º 3 (3/8") - 71 mm²</option>
+                                        <option value="12.7" data-area="129" data-name="N.º 4">N.º 4 (1/2") - 129 mm²</option>
+                                        <option value="15.9" data-area="199" data-name="N.º 5">N.º 5 (5/8") - 199 mm²</option>
+                                        <option value="19.1" data-area="284" data-name="N.º 6">N.º 6 (3/4") - 284 mm²</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grupo-input" style="${displayStyle}">
+                                <label for="sel-diametro-temp-${index}">Diámetro Ref. Temperatura:</label>
+                                <span class="formula-lbl">[ Para retracción y temp. ]</span>
+                                <div class="input-wrapper">
+                                    <select id="sel-diametro-temp-${index}" onchange="ejecutarMemoriaMaciza()">
+                                        <option value="6.4" data-area="32" data-name="N.º 2">N.º 2 (1/4") - 32 mm²</option>
+                                        <option value="9.5" data-area="71" data-name="N.º 3" selected>N.º 3 (3/8") - 71 mm²</option>
+                                        <option value="12.7" data-area="129" data-name="N.º 4">N.º 4 (1/2") - 129 mm²</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grupo-input" style="${displayStyle}">
+                                <label for="sel-alfafm-${index}">Rigidez Vigas (&alpha;<sub>fm</sub>) [Solo 2D]:</label>
+                                <span class="formula-lbl">[ NSR-10 C.9.5.3.2 ]</span>
+                                <div class="input-wrapper">
+                                    <select id="sel-alfafm-${index}" onchange="ejecutarMemoriaMaciza()">
+                                        <option value="2.5" selected>Vigas Rígidas (&alpha;<sub>fm</sub> &gt; 2.0)</option>
+                                        <option value="1.0">Rigidez Intermedia (0.2 &lt; &alpha;<sub>fm</sub> &le; 2.0)</option>
+                                        <option value="0.1">Sin Vigas (&alpha;<sub>fm</sub> &le; 0.2)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-seccion">
+                        <h3>3. Desarrollo Matemático Paso a Paso (${losa.esBidireccional ? 'Método de Diseño Directo - Losa 2D' : 'Método de Franja Unitaria y Coeficientes - Losa 1D'})</h3>
+                        ${pasosHTML}
+                    </div>
+                    
+                </div>
+            </div>`;
+        }
+
+        function inicializarInterfaz() {
+            const data = cargarDatosEstructura();
+            const banner = document.getElementById('banner-alerta');
+            const contCalcs = document.getElementById('contenedor-calculos');
+            const contLosas = document.getElementById('contenedor-losas');
+            
+            if (data.losas.length === 0 || !data.configGlobal.fc) {
+                banner.style.display = 'block';
+                contCalcs.style.display = 'none';
+                banner.innerHTML = `⚠️ <strong>Atención:</strong> Debe <strong>dibujar al menos una losa (1D o 2D)</strong> en el Entorno Gráfico y verificar que f'c y fy estén definidos en el Sistema.`;
+                return false;
+            }
+
+            banner.style.display = 'none';
+            contCalcs.style.display = 'block';
+            
+            document.getElementById('panel-global').style.display = data.configGlobal.losasIguales ? 'block' : 'none';
+            document.getElementById('resumen-hmin-global').style.display = data.configGlobal.losasIguales ? 'block' : 'none';
+
+            let htmlStateHash = data.losas.map(l => l.label + "_" + l.esBidireccional).join("|") + "-" + data.configGlobal.losasIguales;
+            if (window.currentHtmlStateHash !== htmlStateHash || contLosas.innerHTML === '') {
+                contLosas.innerHTML = '';
+                data.losas.forEach((losa, i) => {
+                    contLosas.innerHTML += generarHTMLLosa(losa, i, data.configGlobal);
+                });
+                window.currentHtmlStateHash = htmlStateHash;
+            }
+            
+            return data;
+        }
+
+        // Auxiliar para cálculo de flexión por metro de ancho (b = 1000 mm)
+        function disenarFlexionFranja(Mu_kNm, b_mm, d_mm, fc, fy, beta1, AsMin_mm2, areaBarra, nombreBarra, sMax_mm) {
+            const phi = 0.90;
+            const Rn = (Mu_kNm * 1e6) / (phi * b_mm * Math.pow(d_mm, 2));
+            const term = Math.max(0, 1 - (2 * Rn) / (0.85 * fc));
+            const rho = (0.85 * fc / fy) * (1 - Math.sqrt(term));
+            const AsCalc = rho * b_mm * d_mm;
+            const AsDiseno = Math.max(AsCalc, AsMin_mm2);
+            const gobierna = AsCalc >= AsMin_mm2 ? "Cálculo (Flexión)" : "Mínimo (Retracción/Temp.)";
+            const sTeorico = (areaBarra * 1000) / Math.max(1, AsDiseno);
+            let sAdoptado = Math.floor(Math.min(sTeorico, sMax_mm) / 10) * 10;
+            if (sTeorico >= 250 && sMax_mm >= 250) sAdoptado = 250;
+            else if (sTeorico >= 200 && sMax_mm >= 200 && sAdoptado > 200) sAdoptado = 200;
+            sAdoptado = Math.max(50, Math.min(sAdoptado, sMax_mm));
+            const AsProv = (areaBarra * 1000) / sAdoptado;
+            const a_prov = (AsProv * fy) / (0.85 * fc * b_mm);
+            const c_prov = a_prov / beta1;
+            const et = c_prov > 0 ? 0.003 * (d_mm - c_prov) / c_prov : 0.05;
+            const phiMn = phi * AsProv * fy * (d_mm - a_prov / 2) * 1e-6;
+
+            return {
+                Rn, rho, AsCalc, AsDiseno, gobierna, sTeorico, sAdoptado, AsProv, a_prov, beta1, c_prov, et, phiMn,
+                spec: `${nombreBarra} @ ${sAdoptado} mm`
+            };
+        }
+
+        // Deflexiones para franja maciza b = 1000 mm con inercias desglosadas (Icr_1 concreto y Icr_2 Steiner acero)
+        function calcularDeflexionMaciza(Ln_m, h_mm, d_mm, fc, Ec_MPa, Es_MPa, wD_kNm, wL_kNm, AsProv_mm2, coefM) {
+            const b = 1000;
+            const Ec = (Ec_MPa && Ec_MPa > 0) ? Ec_MPa : (4700 * Math.sqrt(fc));
+            const Es = (Es_MPa && Es_MPa > 0) ? Es_MPa : 200000;
+            const n = Es / Ec;
+            const Ig = (b * Math.pow(h_mm, 3)) / 12;
+            const yt = h_mm / 2;
+            const fr = 0.62 * Math.sqrt(fc);
+            const Mcr = (fr * Ig) / yt * 1e-6;
+
+            const wServ = wD_kNm + wL_kNm;
+            const Ma_D = (wD_kNm * Math.pow(Ln_m, 2)) / coefM;
+            const Ma_tot = (wServ * Math.pow(Ln_m, 2)) / coefM;
+
+            // Eje neutro fisurado y desglose separado de inercias
+            const nAs = n * AsProv_mm2;
+            const c_cr = (-nAs + Math.sqrt(Math.pow(nAs, 2) + 2 * b * nAs * d_mm)) / b;
+            const Icr_1_conc = (b * Math.pow(c_cr, 3)) / 3;
+            const Icr_2_acero = nAs * Math.pow(d_mm - c_cr, 2);
+            const Icr = Icr_1_conc + Icr_2_acero;
+
+            let coefDefl = 5 / 384;
+            if (coefM === 10 || coefM === 11 || coefM === 14) coefDefl = 1 / 185;
+            else if (coefM >= 12) coefDefl = 1 / 384;
+            else if (coefM === 2) coefDefl = 1 / 8;
+
+            const fisurado = Ma_tot > Mcr;
+            let Ie = Ig;
+            if (fisurado) {
+                const ratio3 = Math.pow(Mcr / Ma_tot, 3);
+                Ie = Math.min(Ig, ratio3 * Ig + (1 - ratio3) * Icr);
+            }
+
+            const delta_i = (coefDefl * wServ * Math.pow(Ln_m * 1000, 4)) / (Ec * Ie);
+            const delta_D = (coefDefl * wD_kNm * Math.pow(Ln_m * 1000, 4)) / (Ec * Ie);
+            const delta_L = Math.max(0, delta_i - delta_D);
+            const lambdaDelta = 2.0;
+            const delta_LP = lambdaDelta * delta_D + delta_L;
+
+            return {
+                Ec, Es, n, Ig, yt, fr, Mcr, Ma_D, Ma_tot,
+                nAs, c_cr, Icr_1_conc, Icr_2_acero, Icr, Ie, fisurado,
+                delta_i, delta_D, delta_L, delta_LP,
+                lim360: (Ln_m * 1000) / 360,
+                lim480: (Ln_m * 1000) / 480
+            };
+        }
+
+        window.ejecutarMemoriaMaciza = function() {
+            const data = inicializarInterfaz();
+            if (!data) return;
+
+            const isGlobal = data.configGlobal.losasIguales;
+            const fc = data.configGlobal.fc;
+            const fy = data.configGlobal.fy;
+            const EcSys = data.configGlobal.Ec || (4700 * Math.sqrt(fc));
+            const EcFormulaSys = data.configGlobal.EcFormula || "4700*raiz(f'c)";
+            const EsSys = data.configGlobal.Es || 200000;
+            const Sw = data.configGlobal.Sw;
+            const rec = data.configGlobal.rec;
+            const comb = data.configGlobal.combinacion || "1.2D+1.6L";
+            const incPeso = data.configGlobal.pesoPropio;
+
+            const infoBeta1 = calcularBeta1Normativo(fc);
+            const beta1 = infoBeta1.valor;
+
+            const hGlobal = isGlobal ? parseFloat(document.getElementById('in-h-global').value) : 150;
+            const alfaGlobal = isGlobal ? parseFloat(document.getElementById('sel-alfafm-global').value) : 2.5;
+
+            const diamSelG = document.getElementById('sel-diametro-global');
+            const phiGlobal = isGlobal ? parseFloat(diamSelG.value) : 9.5;
+            const areaBarG = isGlobal ? parseFloat(diamSelG.options[diamSelG.selectedIndex].getAttribute('data-area')) : 71;
+            const nameBarG = isGlobal ? diamSelG.options[diamSelG.selectedIndex].getAttribute('data-name') : "N.º 3";
+
+            const diamTempG = document.getElementById('sel-diametro-temp-global');
+            const areaTempG = isGlobal ? parseFloat(diamTempG.options[diamTempG.selectedIndex].getAttribute('data-area')) : 71;
+            const nameTempG = isGlobal ? diamTempG.options[diamTempG.selectedIndex].getAttribute('data-name') : "N.º 3";
+
+            // =========================================================================
+            // VERIFICACIÓN GLOBAL DEL MÉTODO DE COEFICIENTES (TODAS LAS LOSAS 1D)
+            // =========================================================================
+            const losas1DInfo = [];
+            data.losas.forEach((losa, idx) => {
+                if (!losa.esBidireccional) {
+                    const h_i = isGlobal ? hGlobal : (parseFloat(document.getElementById(`in-h-${idx}`).value) || 150);
+                    const condApoyo_i = document.getElementById(`sel-apoyo-${idx}`).value;
+                    const L_eje = losa.es2D ? losa.Lcorta : losa.Llarga;
+                    const Ln_i = Math.max(0.1, L_eje - Sw);
+
+                    let sumDsup_i = 0, sumLiva_i = 0;
+                    data.configGlobal.muertas.forEach(m => {
+                        if (m.losa === 'Todas' || m.losa === losa.label) sumDsup_i += (m.wpa || 0) + (m.wcu || 0);
+                    });
+                    data.configGlobal.vivas.forEach(v => {
+                        if (v.losa === 'Todas' || v.losa === losa.label) sumLiva_i += (v.valor || 0);
+                    });
+                    data.configGlobal.extras.forEach(ext => {
+                        if (ext.losa === 'Todas' || ext.losa === losa.label) {
+                            let v = parseFloat(ext.valor) || 0;
+                            if (ext.tipo === 'muerta') sumDsup_i += v;
+                            if (ext.tipo === 'viva') sumLiva_i += v;
+                        }
+                    });
+                    const wpp_i = incPeso ? (24.0 * (h_i / 1000)) : 0;
+                    const Dtot_i = wpp_i + sumDsup_i;
+                    const Ltot_i = sumLiva_i;
+                    const ratioLD_i = Dtot_i > 0 ? (Ltot_i / Dtot_i) : 0;
+
+                    losas1DInfo.push({
+                        label: losa.label,
+                        Ln: Ln_i,
+                        h: h_i,
+                        condApoyo: condApoyo_i,
+                        Dtotal: Dtot_i,
+                        Ltotal: Ltot_i,
+                        ratioLD: ratioLD_i
+                    });
+                }
+            });
+
+            const panelCoef1DGlobal = document.getElementById('panel-coeficientes-1d-global');
+            if (losas1DInfo.length > 0) {
+                panelCoef1DGlobal.style.display = 'block';
+                const cant1D = losas1DInfo.length;
+                const tieneContinuidad = (cant1D >= 2) || losas1DInfo.some(x => x.condApoyo === "UN_EXT" || x.condApoyo === "DOS_EXT");
+                
+                const luces1D_arr = losas1DInfo.map(x => x.Ln);
+                const Lmax_1D = Math.max(...luces1D_arr);
+                const Lmin_1D = Math.min(...luces1D_arr);
+                const relLucesGlobal = cant1D >= 2 ? (Lmax_1D / Math.max(0.1, Lmin_1D)) : 1.0;
+                const cumpleRelLuces = relLucesGlobal <= 1.2001;
+
+                const espesoresUnicos = [...new Set(losas1DInfo.map(x => x.h))];
+                const cumplePrismatico = espesoresUnicos.length === 1;
+
+                const maxRatioLD = Math.max(...losas1DInfo.map(x => x.ratioLD));
+                const losaCritLD = losas1DInfo.find(x => Math.abs(x.ratioLD - maxRatioLD) < 1e-6) || losas1DInfo[0];
+                const cumpleLD = maxRatioLD <= 3.0001;
+
+                const cumpleCargasUnif = true;
+                const aplicaCoefGlobal = tieneContinuidad && cumpleRelLuces && cumplePrismatico && cumpleLD && cumpleCargasUnif;
+
+                document.getElementById('contenedor-tabla-coeficientes-global').innerHTML = `
+                    <table class="tabla-verif">
+                        <thead>
+                            <tr>
+                                <th>Requisito Normativo del Método de Coeficientes (Evaluación Global 1D)</th>
+                                <th>Referencia</th>
+                                <th>Valores en las Losas 1D (${losas1DInfo.map(x => x.label).join(', ')})</th>
+                                <th>Estado Global</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1. Aplicable a losas unidireccionales continuas (Requiere al menos 2 luces)</td>
+                                <td class="num">ACI 318-25 6.5.1 / NSR-10 C.8.3.3</td>
+                                <td class="num">${cant1D} tramo(s) 1D definidos (${tieneContinuidad ? 'Con continuidad' : '1 tramo aislado'})</td>
+                                <td class="num">${tieneContinuidad ? statusTag(true) : '<span class="tag-status tag-info">ESTÁTICA 1 VANO</span>'}</td>
+                            </tr>
+                            <tr>
+                                <td>2. Limitado a relaciones de luces L<sub>máx</sub> / L<sub>mín</sub> &le; 1.20</td>
+                                <td class="num">ACI 318-25 6.5.1 / NSR-10 C.8.3.3</td>
+                                <td class="num">L<sub>máx</sub> = ${Lmax_1D.toFixed(2)} m | L<sub>mín</sub> = ${Lmin_1D.toFixed(2)} m &rarr; L<sub>máx</sub>/L<sub>mín</sub> = <strong>${relLucesGlobal.toFixed(2)}</strong> &le; 1.20</td>
+                                <td class="num">${statusTag(cumpleRelLuces)}</td>
+                            </tr>
+                            <tr>
+                                <td>3. Cargas gravitacionales uniformemente distribuidas</td>
+                                <td class="num">ACI 318-25 6.5.1 / NSR-10 C.8.3.3</td>
+                                <td class="num">Cargas superficiales uniformes convertidas a franja b = 1.00 m</td>
+                                <td class="num">${statusTag(cumpleCargasUnif)}</td>
+                            </tr>
+                            <tr>
+                                <td>4. Carga viva unitaria no excede 3 veces la carga muerta (L / D &le; 3.0)</td>
+                                <td class="num">ACI 318-25 6.5.1 / NSR-10 C.8.3.3</td>
+                                <td class="num">(L/D)<sub>máx</sub> en ${losaCritLD.label} = ${losaCritLD.Ltotal.toFixed(2)} / ${losaCritLD.Dtotal.toFixed(2)} = <strong>${maxRatioLD.toFixed(2)}</strong> &le; 3.00</td>
+                                <td class="num">${statusTag(cumpleLD)}</td>
+                            </tr>
+                            <tr>
+                                <td>5. Elementos prismáticos de sección constante</td>
+                                <td class="num">ACI 318-25 6.5.1 / NSR-10 C.8.3.3</td>
+                                <td class="num">${cumplePrismatico ? `h = ${espesoresUnicos[0]} mm constante en todas las losas 1D` : `Espesores variables (${espesoresUnicos.join(' mm, ')} mm)`}</td>
+                                <td class="num">${statusTag(cumplePrismatico)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+
+                document.getElementById('txt-dictamen-coeficientes-global').innerHTML = `
+                    <span class="calc-name">Dictamen Global del Método de Coeficientes (ACI 318-25 6.5)</span> = <strong>${aplicaCoefGlobal ? '<span style="color:#10b981;">CUMPLE TODAS LAS CONDICIONES NORMATIVAS PARA EL SISTEMA 1D</span>' : (tieneContinuidad ? '<span style="color:#ef4444;">NO CUMPLE LÍMITES DE REGULARIDAD (Se recomienda Análisis Elástico; se muestran valores de referencia por Coeficientes)</span>' : '<span style="color:#60a5fa;">TRAMO ÚNICO ISOSTÁTICO (Se calcula con coeficientes estáticos exactos 1/8 y 1/24)</span>')}</strong>
+                `;
+            } else {
+                panelCoef1DGlobal.style.display = 'none';
+            }
+
+            let hCriticoSistema = 0;
+            let etiquetaCritica = "";
+            let tablaResumenHTML = `
+                <table class="tabla-resumen-losas">
+                    <thead>
+                        <tr>
+                            <th>Losa</th>
+                            <th>Geometría Ejes</th>
+                            <th>Relación &beta;</th>
+                            <th>Clasificación Normativa</th>
+                            <th>Luz Libre Gobernante</th>
+                            <th>Criterio / Caso</th>
+                            <th>h<sub>mín</sub> Req.</th>
+                            <th>h Adoptado</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            const k_fy = Math.abs(fy - 420) < 1e-3 ? 1.0 : (0.4 + fy / 700);
+            const rhoMinTemp = fy < 420 ? 0.0020 : (Math.abs(fy - 420) < 1e-3 ? 0.0018 : Math.max(0.0018 * 420 / fy, 0.0014));
+
+            data.losas.forEach((losa, i) => {
+                let sumDsup = 0;
+                let sumLiva = 0;
+                data.configGlobal.muertas.forEach(m => {
+                    if (m.losa === 'Todas' || m.losa === losa.label) sumDsup += (m.wpa || 0) + (m.wcu || 0);
+                });
+                data.configGlobal.vivas.forEach(v => {
+                    if (v.losa === 'Todas' || v.losa === losa.label) sumLiva += (v.valor || 0);
+                });
+                data.configGlobal.extras.forEach(ext => {
+                    if (ext.losa === 'Todas' || ext.losa === losa.label) {
+                        let v = parseFloat(ext.valor) || 0;
+                        if (ext.tipo === 'muerta') sumDsup += v;
+                        if (ext.tipo === 'viva') sumLiva += v;
+                    }
+                });
+
+                const h = isGlobal ? hGlobal : parseFloat(document.getElementById(`in-h-${i}`).value);
+                const condApoyo = document.getElementById(`sel-apoyo-${i}`).value;
+                const alfa_fm = isGlobal ? alfaGlobal : parseFloat(document.getElementById(`sel-alfafm-${i}`).value);
+
+                const diamSelL = document.getElementById(`sel-diametro-${i}`);
+                const phiBar = isGlobal ? phiGlobal : parseFloat(diamSelL.value);
+                const areaBar = isGlobal ? areaBarG : parseFloat(diamSelL.options[diamSelL.selectedIndex].getAttribute('data-area'));
+                const nameBar = isGlobal ? nameBarG : diamSelL.options[diamSelL.selectedIndex].getAttribute('data-name');
+
+                const diamTempL = document.getElementById(`sel-diametro-temp-${i}`);
+                const areaTemp = isGlobal ? areaTempG : parseFloat(diamTempL.options[diamTempL.selectedIndex].getAttribute('data-area'));
+                const nameTemp = isGlobal ? nameTempG : diamTempL.options[diamTempL.selectedIndex].getAttribute('data-name');
+
+                if (isNaN(h) || h <= 0) return;
+
+                document.getElementById(`in-Dsup-${i}`).value = `${sumDsup.toFixed(2)} kN/m²`;
+                document.getElementById(`in-Liva-${i}`).value = `${sumLiva.toFixed(2)} kN/m²`;
+
+                // =========================================================================
+                // RAMA A: LOSA MACIZA EN UNA DIRECCIÓN (1D)
+                // =========================================================================
+                if (!losa.esBidireccional) {
+                    const L_diseno_eje = losa.es2D ? losa.Lcorta : losa.Llarga;
+                    const Ln = Math.max(0.1, L_diseno_eje - Sw);
+                    document.getElementById(`in-Ln-${i}`).value = `${Ln.toFixed(2)} m (Dir. 1D)`;
+
+                    if (losa.es2D) {
+                        document.getElementById(`txt-p0-${i}`).innerHTML = `
+                            <span class="calc-name">Relación de Luces (&beta;)</span> = L<sub>largo</sub> / L<sub>corto</sub> = ${losa.Llarga.toFixed(2)} m / ${losa.Lcorta.toFixed(2)} m = <strong>${losa.betaEjes.toFixed(2)}</strong> &ge; 2.0 &rarr; <strong>TRABAJA EN UNA DIRECCIÓN (1D)</strong> <span class="calc-ref">(NSR-10 C.8.3.3)</span><br>
+                            <span class="calc-name">Dirección de Flexión Principal</span> = Paralela a la luz corta (L<sub>corto</sub> = ${losa.Lcorta.toFixed(2)} m). Se diseña mediante una franja unitaria b = 1000 mm <span class="calc-ref">(Módulo 1, p. 7)</span>
+                        `;
+                    } else {
+                        document.getElementById(`txt-p0-${i}`).innerHTML = `
+                            <span class="calc-name">Tipología del Elemento</span> = Tramo prismático definido entre 2 nodos (L = ${losa.Llarga.toFixed(2)} m) &rarr; <strong>LOSA MACIZA EN UNA DIRECCIÓN (1D)</strong> <span class="calc-ref">(NSR-10 C.8.3.3)</span><br>
+                            <span class="calc-name">Ancho de Franja Unitaria (b)</span> = 1.00 m = <strong>1000 mm</strong> (Convierte cargas superficiales kN/m² en cargas lineales kN/m) <span class="calc-ref">(Módulo 2, p. 3)</span>
+                        `;
+                    }
+
+                    // Paso 1: Predimensionamiento
+                    const divH = getDivisorMaciza1D(condApoyo);
+                    const hTabla = (Ln * 1000) / divH;
+                    const hMinReq = Math.ceil(hTabla * k_fy);
+                    const okHmin = h >= hMinReq;
+                    const d = h - rec - (phiBar / 2);
+
+                    if (hMinReq > hCriticoSistema) {
+                        hCriticoSistema = hMinReq;
+                        etiquetaCritica = `${losa.label} [1D] (L<sub>n</sub> = ${Ln.toFixed(2)} m, L/${divH})`;
+                    }
+
+                    tablaResumenHTML += `
+                        <tr class="${!okHmin ? 'critico' : ''}">
+                            <td><strong>${losa.label}</strong></td>
+                            <td>${losa.es2D ? `${losa.Llarga.toFixed(2)}×${losa.Lcorta.toFixed(2)}m` : `${losa.Llarga.toFixed(2)}m`}</td>
+                            <td>${losa.es2D ? losa.betaEjes.toFixed(2) : '—'}</td>
+                            <td>Maciza 1D</td>
+                            <td>${Ln.toFixed(2)} m</td>
+                            <td>L / ${divH}</td>
+                            <td><strong>${hMinReq} mm</strong></td>
+                            <td>${h} mm</td>
+                            <td>${statusTag(okHmin)}</td>
+                        </tr>
+                    `;
+
+                    document.getElementById(`txt-p1-${i}`).innerHTML = `
+                        <span class="calc-name">Luz Libre de Cálculo (L<sub>n</sub>)</span> = L<sub>eje</sub> - S<sub>w</sub> = ${L_diseno_eje.toFixed(2)} - ${Sw.toFixed(2)} = <strong>${Ln.toFixed(2)} m (${(Ln*1000).toFixed(0)} mm)</strong> <span class="calc-ref">(NSR-10 C.8.9)</span><br>
+                        <span class="calc-name">Factor Ajuste por Fluencia (k<sub>fy</sub>)</span> = 0.4 + f<sub>y</sub> / 700 = 0.4 + ${fy} / 700 = <strong>${k_fy.toFixed(3)}</strong> <span class="calc-ref">(NSR-10 C.9.5.2.1 / ACI 318-25 7.3.1.1.1)</span><br>
+                        <span class="calc-name">Espesor Mínimo (h<sub>mín</sub>)</span> = (L<sub>n</sub> / ${divH}) × k<sub>fy</sub> = (${(Ln*1000).toFixed(0)} / ${divH}) × ${k_fy.toFixed(3)} = <strong>${hMinReq} mm</strong> <span class="calc-ref">(NSR-10 Tabla C.9.5(a) / ACI 318-25 Tabla 7.3.1.1)</span><br>
+                        <span class="calc-name">Verificación de Espesor Adoptado</span> = h<sub>adoptado</sub> &ge; h<sub>mín</sub> &rarr; ${h} mm &ge; ${hMinReq} mm &rarr; <strong>${statusTag(okHmin)}</strong><br>
+                        <span class="calc-name">Peralte Efectivo (d)</span> = h - r - (&phi;<sub>barra</sub> / 2) = ${h} - ${rec} - (${phiBar} / 2) = <strong>${d.toFixed(2)} mm</strong> <span class="calc-ref">(ACI 318-25 20.5.1.3.1)</span>
+                    `;
+
+                    // Paso 2: Avalúo de Cargas de Servicio
+                    const h_m = h / 1000;
+                    const b_m = 1.00;
+                    const wpp = incPeso ? (24.0 * h_m * b_m) : 0;
+                    const Dtotal = wpp + sumDsup;
+                    const Ltotal = sumLiva;
+
+                    document.getElementById(`txt-p2-${i}`).innerHTML = `
+                        <span class="calc-name">Peso Propio de Losa (w<sub>pp</sub>)</span> = &gamma;<sub>c</sub> × h × b = 24.0 kN/m³ × ${h_m.toFixed(3)} m × 1.00 m = <strong>${wpp.toFixed(2)} kN/m</strong> <span class="calc-ref">(NSR-10 B.3.2)</span><br>
+                        <span class="calc-name">Carga Muerta Sobreañadida (D<sub>sup</sub>)</span> = Acabados + Particiones + Extras = <strong>${sumDsup.toFixed(2)} kN/m</strong> <span class="calc-ref">(NSR-10 B.3.4.3)</span><br>
+                        <span class="calc-name">Carga Muerta Total de Servicio (w<sub>D</sub>)</span> = w<sub>pp</sub> + D<sub>sup</sub> = ${wpp.toFixed(2)} + ${sumDsup.toFixed(2)} = <strong>${Dtotal.toFixed(2)} kN/m</strong> (por franja de 1.0 m)<br>
+                        <span class="calc-name">Carga Viva Nominal de Servicio (w<sub>L</sub>)</span> = L × 1.00 m = <strong>${Ltotal.toFixed(2)} kN/m</strong> <span class="calc-ref">(NSR-10 Tabla B.4.2.1-1)</span>
+                    `;
+
+                    // Paso 3: Carga Última
+                    let wu = 0, eqComb = "", sustComb = "", refComb = "";
+                    if (comb === "1.4D") {
+                        wu = 1.4 * Dtotal;
+                        eqComb = "1.4 D"; sustComb = `1.4(${Dtotal.toFixed(2)})`; refComb = "Ec. B.2.4-1";
+                    } else if (comb === "1.2D+1.0L") {
+                        wu = 1.2 * Dtotal + 1.0 * Ltotal;
+                        eqComb = "1.2 D + 1.0 L"; sustComb = `1.2(${Dtotal.toFixed(2)}) + 1.0(${Ltotal.toFixed(2)})`; refComb = "Ec. B.2.4-3";
+                    } else {
+                        wu = 1.2 * Dtotal + 1.6 * Ltotal;
+                        eqComb = "1.2 D + 1.6 L"; sustComb = `1.2(${Dtotal.toFixed(2)}) + 1.6(${Ltotal.toFixed(2)})`; refComb = "Ec. B.2.4-2";
+                    }
+
+                    document.getElementById(`txt-p3-${i}`).innerHTML = `
+                        <span class="calc-name">Carga Última de Diseño (w<sub>u</sub>)</span> = ${eqComb} = ${sustComb} = <strong style="color:#e0b13a;">${wu.toFixed(2)} kN/m</strong> <span class="calc-ref">(NSR-10 B.2.4.2 ${refComb})</span>
+                    `;
+
+                    // Paso 4: Cálculo de Momentos
+                    const baseWuLn2 = wu * Math.pow(Ln, 2);
+                    let secciones1D = [];
+                    if (condApoyo === "SIMP") {
+                        secciones1D = [
+                            { ubic: "Centro de la Luz (Momento Positivo Isostático)", coefTxt: "1/8", div: 8, tipo: "Positivo (+)" },
+                            { ubic: "Apoyo Exterior (Monolítico con Viga de Borde)", coefTxt: "1/24", div: 24, tipo: "Negativo (-)" }
+                        ];
+                    } else if (condApoyo === "VOLADIZO") {
+                        secciones1D = [
+                            { ubic: "Empotramiento del Voladizo (Momento Negativo)", coefTxt: "1/2", div: 2, tipo: "Negativo (-)" }
+                        ];
+                    } else {
+                        secciones1D = [
+                            { ubic: "Apoyo Interior - 1.ª Cara Interior", coefTxt: "1/10", div: 10, tipo: "Negativo (-)" },
+                            { ubic: "Apoyo Interior - Demás Caras Interiores", coefTxt: "1/11", div: 11, tipo: "Negativo (-)" },
+                            { ubic: "Vano Extremo - Momento Positivo", coefTxt: "1/14", div: 14, tipo: "Positivo (+)" },
+                            { ubic: "Vano Interior - Momento Positivo", coefTxt: "1/16", div: 16, tipo: "Positivo (+)" },
+                            { ubic: "Apoyo Exterior - Viga de Borde", coefTxt: "1/24", div: 24, tipo: "Negativo (-)" }
+                        ];
+                    }
+
+                    document.getElementById(`txt-p4-${i}`).innerHTML = `
+                        <span class="calc-name">Valor Base de Momento (w<sub>u</sub> L<sub>n</sub>²)</span> = w<sub>u</sub> × L<sub>n</sub>² = ${wu.toFixed(2)} kN/m × (${Ln.toFixed(2)} m)² = <strong>${baseWuLn2.toFixed(2)} kN·m/m</strong> <span class="calc-ref">(ACI 318-25 6.5.2)</span><br>
+                        <span class="calc-name">Ecuación General de Momentos</span> = M<sub>u</sub> = C × (w<sub>u</sub> × L<sub>n</sub>²) <span class="calc-ref">(NSR-10 C.8.3.3 / ACI 318-25 Tabla 6.5.2)</span>
+                    `;
+
+                    let rowsMom = "";
+                    secciones1D.forEach(sec => {
+                        sec.Mu = baseWuLn2 / sec.div;
+                        rowsMom += `
+                            <tr>
+                                <td><strong>${sec.ubic}</strong></td>
+                                <td class="num">${sec.tipo}</td>
+                                <td class="num"><strong>${sec.coefTxt}</strong></td>
+                                <td class="num">${baseWuLn2.toFixed(2)} / ${sec.div}</td>
+                                <td class="num"><strong style="color:#e0b13a;">${sec.Mu.toFixed(2)} kN·m/m</strong></td>
+                            </tr>
+                        `;
+                    });
+
+                    document.getElementById(`tb-momentos1d-${i}`).innerHTML = `
+                        <table class="tabla-verif">
+                            <thead>
+                                <tr><th>Ubicación de la Sección</th><th>Signo</th><th>Coeficiente C</th><th>Sustitución</th><th>M<sub>u</sub> (kN·m/m)</th></tr>
+                            </thead>
+                            <tbody>${rowsMom}</tbody>
+                        </table>
+                    `;
+
+                    // Paso 5 y 6: Diseño a Flexión con Beta1 explícito
+                    const AsMin = rhoMinTemp * 1000 * h;
+                    const sMaxPrincipal = Math.min(3 * h, 450);
+                    const sMaxTemp = Math.min(5 * h, 450);
+
+                    const secGob = secciones1D[0];
+                    const desGob = disenarFlexionFranja(secGob.Mu, 1000, d, fc, fy, beta1, AsMin, areaBar, nameBar, sMaxPrincipal);
+
+                    document.getElementById(`txt-p5-${i}`).innerHTML = `
+                        <span class="calc-name">Sección Gobernante Evaluada</span> = <strong>${secGob.ubic} (M<sub>u</sub> = ${secGob.Mu.toFixed(2)} kN·m/m)</strong><br>
+                        <span class="calc-name">Coeficiente de Resistencia (R<sub>n</sub>)</span> = M<sub>u</sub> / (&phi; b d²) = (${secGob.Mu.toFixed(2)} × 10⁶) / (0.90 × 1000 × ${d.toFixed(2)}²) = <strong>${desGob.Rn.toFixed(3)} MPa</strong> <span class="calc-ref">(ACI 318-25 21.2.1, &phi;=0.90)</span><br>
+                        <span class="calc-name">Cuantía Mecánica Requerida (&rho;)</span> = (0.85 f'<sub>c</sub> / f<sub>y</sub>) × [1 - &radic;(1 - 2R<sub>n</sub> / (0.85 f'<sub>c</sub>))] = (0.85×${fc}/${fy}) × [1 - &radic;(1 - 2(${desGob.Rn.toFixed(3)})/(0.85×${fc}))] = <strong>${desGob.rho.toFixed(5)}</strong> <span class="calc-ref">(ACI 318-25 22.2)</span><br>
+                        <span class="calc-name">Acero Requerido por Flexión (A<sub>s,req</sub>)</span> = &rho; × b × d = ${desGob.rho.toFixed(5)} × 1000 × ${d.toFixed(2)} = <strong>${desGob.AsCalc.toFixed(1)} mm²/m</strong><br>
+                        <span class="calc-name">Profundidad Bloque Whitney (a)</span> = (A<sub>s,prov</sub> × f<sub>y</sub>) / (0.85 × f'<sub>c</sub> × b) = (${desGob.AsProv.toFixed(0)} × ${fy}) / (0.85 × ${fc} × 1000) = <strong>${desGob.a_prov.toFixed(2)} mm</strong> <span class="calc-ref">(NSR-10 C.10.2.7.1)</span><br>
+                        <span class="calc-name">Factor Bloque Compresión (&beta;<sub>1</sub>)</span> = ${infoBeta1.condicion} &rarr; ${infoBeta1.formula} = <strong>${beta1.toFixed(3)}</strong> <span class="calc-ref">(NSR-10 C.10.2.7.3 / Límites: 0.65 &le; &beta;<sub>1</sub> &le; 0.85)</span><br>
+                        <span class="calc-name">Profundidad Eje Neutro (c)</span> = a / &beta;<sub>1</sub> = ${desGob.a_prov.toFixed(2)} / ${beta1.toFixed(3)} = <strong>${desGob.c_prov.toFixed(2)} mm</strong> <span class="calc-ref">(ACI 318-25 22.2.2.4.3)</span><br>
+                        <span class="calc-name">Deformación Unitaria Acero (&epsilon;<sub>t</sub>)</span> = 0.003 × (d - c) / c = 0.003 × (${d.toFixed(2)} - ${desGob.c_prov.toFixed(2)}) / ${desGob.c_prov.toFixed(2)} = <strong>${desGob.et.toFixed(4)}</strong> &ge; 0.005 &rarr; <strong>${statusTag(desGob.et >= 0.005)} (Sección Controlada por Tracción)</strong> <span class="calc-ref">(ACI 318-25 21.2.2)</span><br>
+                        <span class="calc-name">Momento Resistente de Diseño (&phi;M<sub>n</sub>)</span> = &phi; A<sub>s,prov</sub> f<sub>y</sub> (d - a/2) = 0.90 × ${desGob.AsProv.toFixed(0)} × ${fy} × (${d.toFixed(2)} - ${desGob.a_prov.toFixed(2)}/2) × 10⁻⁶ = <strong>${desGob.phiMn.toFixed(2)} kN·m/m</strong> &ge; ${secGob.Mu.toFixed(2)} kN·m/m &rarr; <strong>${statusTag(desGob.phiMn >= secGob.Mu)}</strong>
+                    `;
+
+                    let rowsSec = "";
+                    secciones1D.forEach(sec => {
+                        const df = disenarFlexionFranja(sec.Mu, 1000, d, fc, fy, beta1, AsMin, areaBar, nameBar, sMaxPrincipal);
+                        rowsSec += `
+                            <tr>
+                                <td><strong>${sec.ubic}</strong></td>
+                                <td class="num">${sec.coefTxt}</td>
+                                <td class="num">${sec.Mu.toFixed(2)}</td>
+                                <td class="num">${df.Rn.toFixed(3)}</td>
+                                <td class="num">${df.AsCalc.toFixed(0)}</td>
+                                <td class="num">${AsMin.toFixed(0)}</td>
+                                <td class="num"><strong>${df.AsDiseno.toFixed(0)}</strong> (${df.gobierna})</td>
+                                <td class="num"><strong style="color:#e0b13a;">${df.spec}</strong> (${df.AsProv.toFixed(0)} mm²/m)</td>
+                            </tr>
+                        `;
+                    });
+
+                    document.getElementById(`txt-p6-${i}`).innerHTML = `
+                        <span class="calc-name">Acero Mínimo Losa Maciza (A<sub>s,mín</sub>)</span> = ${rhoMinTemp.toFixed(4)} × b × h = ${rhoMinTemp.toFixed(4)} × 1000 mm × ${h} mm = <strong>${AsMin.toFixed(1)} mm²/m</strong> <span class="calc-ref">(ACI 318-25 7.6.1.1 y 24.4.3.2 / NSR-10 C.7.12.2.1)</span>
+                    `;
+
+                    document.getElementById(`tb-secciones1d-${i}`).innerHTML = `
+                        <table class="tabla-verif">
+                            <thead>
+                                <tr><th>Ubicación</th><th>Coef.</th><th>M<sub>u</sub> (kN·m/m)</th><th>R<sub>n</sub> (MPa)</th><th>A<sub>s,req</sub> (mm²/m)</th><th>A<sub>s,mín</sub> (mm²/m)</th><th>A<sub>s,diseño</sub> (mm²/m)</th><th>Refuerzo Adoptado</th></tr>
+                            </thead>
+                            <tbody>${rowsSec}</tbody>
+                        </table>
+                    `;
+
+                    // Paso 7: Espaciamiento de Barras Principal y Temperatura
+                    const sTeoTemp = (areaTemp * 1000) / Math.max(1, AsMin);
+                    let sAdopTemp = Math.floor(Math.min(sTeoTemp, sMaxTemp) / 10) * 10;
+                    if (sTeoTemp >= 250 && sMaxTemp >= 250) sAdopTemp = 250;
+                    const AsProvTemp = (areaTemp * 1000) / sAdopTemp;
+
+                    document.getElementById(`txt-p7-${i}`).innerHTML = `
+                        <span class="calc-name">Separación Teórica Ref. Principal (s<sub>teórico</sub>)</span> = (A<sub>b</sub> × 1000) / A<sub>s,diseño</sub> = (${areaBar} × 1000) / ${desGob.AsDiseno.toFixed(1)} = <strong>${desGob.sTeorico.toFixed(1)} mm</strong> <span class="calc-ref">(Módulo 2, p. 13)</span><br>
+                        <span class="calc-name">Separación Máxima Principal (s<sub>máx,ppal</sub>)</span> = min(3h, 450 mm) = min(3 × ${h}, 450) = <strong>${sMaxPrincipal} mm</strong> &rarr; Adoptado s = ${desGob.sAdoptado} mm &le; ${sMaxPrincipal} mm ${statusTag(desGob.sAdoptado <= sMaxPrincipal)} <span class="calc-ref">(NSR-10 C.7.6.5 / ACI 318-25 7.7.2.3)</span><br>
+                        <span class="calc-name highlight">Refuerzo Principal Gobernante Adoptado:</span> <strong style="color:#e0b13a;">${desGob.spec} (A<sub>s,prov</sub> = ${desGob.AsProv.toFixed(0)} mm²/m)</strong><br><br>
+                        <span class="calc-name">Refuerzo Transversal por Temperatura (A<sub>s,rt</sub>)</span> = 0.0018 × b × h = 0.0018 × 1000 × ${h} = <strong>${AsMin.toFixed(1)} mm²/m</strong> <span class="calc-ref">(NSR-10 C.7.12.2.1)</span><br>
+                        <span class="calc-name">Separación Máxima Temperatura (s<sub>máx,temp</sub>)</span> = min(5h, 450 mm) = min(5 × ${h}, 450) = <strong>${sMaxTemp} mm</strong> &rarr; Adoptado s = ${sAdopTemp} mm &le; ${sMaxTemp} mm ${statusTag(sAdopTemp <= sMaxTemp)} <span class="calc-ref">(ACI 318-25 24.4.3.2)</span><br>
+                        <span class="calc-name highlight">Refuerzo Transversal (Repartición) Adoptado:</span> <strong style="color:#e0b13a;">${nameTemp} @ ${sAdopTemp} mm (A<sub>s,prov</sub> = ${AsProvTemp.toFixed(0)} mm²/m)</strong>
+                    `;
+
+                    // Paso 8: Cortante
+                    const coefV = (condApoyo === "UN_EXT" || condApoyo === "DOS_EXT") ? 1.15 : 1.00;
+                    const Vu_apoyo = coefV * (wu * Ln) / 2;
+                    const Vu_d = Math.max(0, Vu_apoyo - wu * (d / 1000));
+                    const Vc = (0.17 * 1.0 * Math.sqrt(fc) * 1000 * d) / 1000;
+                    const phiVc = 0.75 * Vc;
+                    const okCortante = phiVc >= Vu_d;
+
+                    document.getElementById(`txt-p8-${i}`).innerHTML = `
+                        <span class="calc-name">Cortante Último en Apoyo (V<sub>u,máx</sub>)</span> = ${coefV === 1.15 ? '1.15 × ' : ''}(w<sub>u</sub> × L<sub>n</sub>) / 2 = ${coefV} × (${wu.toFixed(2)} × ${Ln.toFixed(2)}) / 2 = <strong>${Vu_apoyo.toFixed(2)} kN/m</strong> <span class="calc-ref">(ACI 318-25 6.5.4)</span><br>
+                        <span class="calc-name">Cortante Crítico a distancia 'd' (V<sub>u,d</sub>)</span> = V<sub>u,máx</sub> - w<sub>u</sub> × d = ${Vu_apoyo.toFixed(2)} - ${wu.toFixed(2)} × ${(d/1000).toFixed(3)} = <strong>${Vu_d.toFixed(2)} kN/m</strong> <span class="calc-ref">(ACI 318-25 7.4.3.2)</span><br>
+                        <span class="calc-name">Resistencia Nominal del Concreto (V<sub>c</sub>)</span> = 0.17 &lambda; &radic;f'<sub>c</sub> b d = 0.17 × 1.0 × &radic;${fc} × 1000 × ${d.toFixed(2)} / 1000 = <strong>${Vc.toFixed(2)} kN/m</strong> <span class="calc-ref">(ACI 318-25 22.5.5.1)</span><br>
+                        <span class="calc-name">Resistencia de Diseño a Cortante (&phi;V<sub>c</sub>)</span> = 0.75 × V<sub>c</sub> = 0.75 × ${Vc.toFixed(2)} = <strong>${phiVc.toFixed(2)} kN/m</strong> <span class="calc-ref">(NSR-10 C.9.3.2.3, &phi;=0.75)</span><br>
+                        <span class="calc-name highlight">Verificación de Cortante:</span> V<sub>u,d</sub> &le; &phi;V<sub>c</sub> &rarr; ${Vu_d.toFixed(2)} kN/m &le; ${phiVc.toFixed(2)} kN/m &rarr; <strong>${statusTag(okCortante)} (No requiere estribos)</strong>
+                    `;
+
+                    // Paso 9: Deflexiones (Inercias desglosadas + Ec y Es del Sistema)
+                    const coefM_serv = condApoyo === "SIMP" ? 8 : (condApoyo === "UN_EXT" ? 10 : (condApoyo === "DOS_EXT" ? 12 : 2));
+                    const defl = calcularDeflexionMaciza(Ln, h, d, fc, EcSys, EsSys, Dtotal, Ltotal, desGob.AsProv, coefM_serv);
+                    const okDeflViva = defl.delta_L <= defl.lim360;
+                    const okDeflLP = defl.delta_LP <= defl.lim480;
+
+                    document.getElementById(`txt-p9-${i}`).innerHTML = `
+                        <span class="calc-name">Módulos Elásticos (E<sub>c</sub>, E<sub>s</sub>) y Relación Modular (n)</span> = E<sub>c</sub> (${EcFormulaSys}) = <strong>${defl.Ec.toFixed(2)} MPa</strong> | E<sub>s</sub> = <strong>${defl.Es.toFixed(0)} MPa</strong> &rarr; n = E<sub>s</sub>/E<sub>c</sub> = <strong>${defl.n.toFixed(2)}</strong> <span class="calc-ref">(Definiciones del Sistema / NSR-10 C.8.5)</span><br>
+                        <span class="calc-name">Inercia Bruta de la Franja (I<sub>g</sub>)</span> = b × h³ / 12 = 1000 × ${h}³ / 12 = <strong>${(defl.Ig/1e6).toFixed(2)} × 10⁶ mm⁴</strong> | y<sub>t</sub> = h/2 = <strong>${defl.yt.toFixed(1)} mm</strong><br>
+                        <span class="calc-name">Momento de Fisuración (M<sub>cr</sub>)</span> = (f<sub>r</sub> × I<sub>g</sub>) / y<sub>t</sub> = (${defl.fr.toFixed(2)} × ${(defl.Ig/1e6).toFixed(2)}×10⁶) / ${defl.yt.toFixed(1)} = <strong>${defl.Mcr.toFixed(2)} kN·m/m</strong> <span class="calc-ref">(ACI 318-25 24.2.3.5)</span><br>
+                        <span class="calc-name">Momento Actuante en Servicio (M<sub>a</sub>)</span> = (w<sub>D+L</sub> × L<sub>n</sub>²) / ${coefM_serv} = (${(Dtotal+Ltotal).toFixed(2)} × ${Ln.toFixed(2)}²) / ${coefM_serv} = <strong>${defl.Ma_tot.toFixed(2)} kN·m/m</strong> &rarr; <strong>${defl.fisurado ? 'SECCIÓN FISURADA (M<sub>a</sub> &gt; M<sub>cr</sub>)' : 'SECCIÓN SIN FISURAR (M<sub>a</sub> &le; M<sub>cr</sub>, I<sub>e</sub> = I<sub>g</sub>)'}</strong><br>
+                        <span class="calc-name">Desglose de Inercia Fisurada Transformada (I<sub>cr</sub>)</span>:<br>
+                        &nbsp;&nbsp;&bull; Área Transformada Acero (n A<sub>s</sub>) = ${defl.n.toFixed(2)} × ${desGob.AsProv.toFixed(0)} = <strong>${defl.nAs.toFixed(1)} mm²/m</strong> &rarr; Profundidad Eje Neutro Fisurado (c<sub>cr</sub>) = <strong>${defl.c_cr.toFixed(2)} mm</strong><br>
+                        &nbsp;&nbsp;&bull; Inercia Sección 1 - Bloque Concreto Comprimido (I<sub>cr,1</sub>) = b × c<sub>cr</sub>³ / 3 = 1000 × ${defl.c_cr.toFixed(2)}³ / 3 = <strong>${(defl.Icr_1_conc/1e6).toFixed(2)} × 10⁶ mm⁴</strong><br>
+                        &nbsp;&nbsp;&bull; Steiner Sección 2 - Acero Transformado en Tracción (I<sub>cr,2</sub>) = n A<sub>s</sub> (d - c<sub>cr</sub>)² = ${defl.nAs.toFixed(1)} × (${d.toFixed(2)} - ${defl.c_cr.toFixed(2)})² = <strong>${(defl.Icr_2_acero/1e6).toFixed(2)} × 10⁶ mm⁴</strong><br>
+                        &nbsp;&nbsp;&bull; Inercia Fisurada Total (I<sub>cr</sub>) = I<sub>cr,1</sub> + I<sub>cr,2</sub> = <strong>${(defl.Icr/1e6).toFixed(2)} × 10⁶ mm⁴</strong> | Inercia Efectiva Branson (I<sub>e</sub>) = <strong>${(defl.Ie/1e6).toFixed(2)} × 10⁶ mm⁴</strong> <span class="calc-ref">(NSR-10 C.9.5.2.3)</span><br>
+                        <span class="calc-name">Flecha Inmediata Carga Viva (&delta;<sub>L</sub>)</span> = <strong>${defl.delta_L.toFixed(2)} mm</strong> &le; L<sub>n</sub>/360 (${defl.lim360.toFixed(2)} mm) &rarr; <strong>${statusTag(okDeflViva)}</strong> <span class="calc-ref">(NSR-10 Tabla C.9.5(b))</span><br>
+                        <span class="calc-name">Flecha Diferida a Largo Plazo (&Delta;<sub>LP</sub>)</span> = &lambda;<sub>&Delta;</sub> &delta;<sub>D</sub> + &delta;<sub>L</sub> = 2.0(${defl.delta_D.toFixed(2)}) + ${defl.delta_L.toFixed(2)} = <strong>${defl.delta_LP.toFixed(2)} mm</strong> &le; L<sub>n</sub>/480 (${defl.lim480.toFixed(2)} mm) &rarr; <strong>${statusTag(okDeflLP)}</strong> <span class="calc-ref">(ACI 318-25 Tabla 24.2.2)</span>
+                    `;
+                } 
+                // =========================================================================
+                // RAMA B: LOSA MACIZA EN DOS DIRECCIONES (2D SOBRE VIGAS - MÓDULO 4)
+                // =========================================================================
+                else {
+                    const L1 = losa.Llarga;
+                    const L2 = losa.Lcorta;
+                    const ln1 = Math.max(0.1, L1 - Sw);
+                    const ln2 = Math.max(0.1, L2 - Sw);
+                    const betaLibre = ln1 / ln2;
+                    const m_ejes = L1 / L2;
+
+                    document.getElementById(`in-Ln-${i}`).value = `ln1=${ln1.toFixed(2)}m | ln2=${ln2.toFixed(2)}m (2D)`;
+
+                    document.getElementById(`txt-p1-${i}`).innerHTML = `
+                        <span class="calc-name">Relación de Aspecto entre Ejes (m)</span> = L<sub>largo</sub> / L<sub>corto</sub> = ${L1.toFixed(2)} m / ${L2.toFixed(2)} m = <strong>${m_ejes.toFixed(2)}</strong> &le; 2.0 &rarr; <strong>COMPORTAMIENTO BIDIRECCIONAL (2D)</strong> <span class="calc-ref">(NSR-10 C.13.6.1 / ACI 318-25 Cap. 8)</span><br>
+                        <span class="calc-name">Mecanismo Estructural</span> = Transmisión biaxial de momentos flexores hacia los cuatro bordes perimetrales. Requiere armadura principal ortogonal en ambas direcciones <span class="calc-ref">(Módulo 4, p. 4)</span>
+                    `;
+
+                    let hMin2D = 125;
+                    let eqHmin2D = "";
+                    let sustHmin2D = "";
+                    if (alfa_fm <= 0.2) {
+                        hMin2D = Math.max(125, Math.ceil(((ln1 * 1000) / 33) * k_fy));
+                        eqHmin2D = "max(l_n1 / 33, 125 mm)";
+                        sustHmin2D = `max(${(ln1*1000).toFixed(0)} / 33, 125)`;
+                    } else if (alfa_fm <= 2.0) {
+                        const calcH = (ln1 * 1000 * (0.8 + fy / 1400)) / (36 + 5 * betaLibre * (alfa_fm - 0.2));
+                        hMin2D = Math.ceil(Math.max(125, calcH));
+                        eqHmin2D = "max( [l_n1(0.8 + f_y/1400)] / [36 + 5\beta(\alpha_fm - 0.2)], 125 mm )";
+                        sustHmin2D = `[${(ln1*1000).toFixed(0)} × (0.8 + ${fy}/1400)] / [36 + 5(${betaLibre.toFixed(2)})(${alfa_fm} - 0.2)] = ${calcH.toFixed(2)} mm`;
+                    } else {
+                        const calcH = (ln1 * 1000 * (0.8 + fy / 1400)) / (36 + 9 * betaLibre);
+                        hMin2D = Math.ceil(Math.max(90, calcH));
+                        eqHmin2D = "max( [l_n1(0.8 + f_y/1400)] / [36 + 9\beta], 90 mm )";
+                        sustHmin2D = `[${(ln1*1000).toFixed(0)} × (0.8 + ${fy}/1400)] / [36 + 9(${betaLibre.toFixed(2)})] = ${calcH.toFixed(2)} mm`;
+                    }
+
+                    const okHmin2D = h >= hMin2D;
+                    if (hMin2D > hCriticoSistema) {
+                        hCriticoSistema = hMin2D;
+                        etiquetaCritica = `${losa.label} [2D] (l<sub>n1</sub> = ${ln1.toFixed(2)} m, &beta; = ${betaLibre.toFixed(2)})`;
+                    }
+
+                    tablaResumenHTML += `
+                        <tr class="${!okHmin2D ? 'critico' : ''}">
+                            <td><strong>${losa.label}</strong></td>
+                            <td>${L1.toFixed(2)}×${L2.toFixed(2)}m</td>
+                            <td>${m_ejes.toFixed(2)}</td>
+                            <td>Maciza 2D</td>
+                            <td>${ln1.toFixed(2)} m</td>
+                            <td>&alpha;<sub>fm</sub> = ${alfa_fm}</td>
+                            <td><strong>${hMin2D} mm</strong></td>
+                            <td>${h} mm</td>
+                            <td>${statusTag(okHmin2D)}</td>
+                        </tr>
+                    `;
+
+                    const d1 = h - rec - (phiBar / 2);
+                    const d2 = h - rec - phiBar - (phiBar / 2);
+                    const d_prom = (d1 + d2) / 2;
+
+                    document.getElementById(`txt-p2-${i}`).innerHTML = `
+                        <span class="calc-name">Luz Libre Dirección Larga (l<sub>n1</sub>)</span> = L<sub>1</sub> - c<sub>1</sub> = ${L1.toFixed(2)} - ${Sw.toFixed(2)} = <strong>${ln1.toFixed(2)} m (${(ln1*1000).toFixed(0)} mm)</strong> <span class="calc-ref">(ACI 318-25 8.10.3.2.1)</span><br>
+                        <span class="calc-name">Luz Libre Dirección Corta (l<sub>n2</sub>)</span> = L<sub>2</sub> - c<sub>2</sub> = ${L2.toFixed(2)} - ${Sw.toFixed(2)} = <strong>${ln2.toFixed(2)} m (${(ln2*1000).toFixed(0)} mm)</strong><br>
+                        <span class="calc-name">Relación de Aspecto Libre (&beta;)</span> = l<sub>n1</sub> / l<sub>n2</sub> = ${ln1.toFixed(2)} / ${ln2.toFixed(2)} = <strong>${betaLibre.toFixed(2)}</strong><br>
+                        <span class="calc-name">Espesor Mínimo Bidireccional (h<sub>mín</sub>)</span> = ${eqHmin2D} = ${sustHmin2D} &rarr; <strong>${hMin2D} mm</strong> <span class="calc-ref">(NSR-10 C.9.5.3.2 / ACI 318-25 Tabla 8.3.1.2)</span><br>
+                        <span class="calc-name">Verificación de Espesor Adoptado</span> = h<sub>adoptado</sub> &ge; h<sub>mín</sub> &rarr; ${h} mm &ge; ${hMin2D} mm &rarr; <strong>${statusTag(okHmin2D)}</strong><br><br>
+                        <span class="calc-name">Peralte Lecho Externo (d<sub>1</sub>)</span> = h - r - (&phi;/2) = ${h} - ${rec} - (${phiBar}/2) = <strong>${d1.toFixed(2)} mm</strong><br>
+                        <span class="calc-name">Peralte Lecho Interno (d<sub>2</sub>)</span> = h - r - &phi; - (&phi;/2) = ${h} - ${rec} - ${phiBar} - (${phiBar}/2) = <strong>${d2.toFixed(2)} mm</strong><br>
+                        <span class="calc-name">Peralte Promedio de Diseño (d<sub>prom</sub>)</span> = (d<sub>1</sub> + d<sub>2</sub>) / 2 = (${d1.toFixed(2)} + ${d2.toFixed(2)}) / 2 = <strong>${d_prom.toFixed(2)} mm</strong> <span class="calc-ref">(Módulo 4, p. 7)</span>
+                    `;
+
+                    const h_m = h / 1000;
+                    const wpp = incPeso ? (24.0 * h_m) : 0;
+                    const Dtotal = wpp + sumDsup;
+                    const Ltotal = sumLiva;
+
+                    let wu = 0, eqComb = "", sustComb = "", refComb = "";
+                    if (comb === "1.4D") {
+                        wu = 1.4 * Dtotal;
+                        eqComb = "1.4 D"; sustComb = `1.4(${Dtotal.toFixed(2)})`; refComb = "Ec. B.2.4-1";
+                    } else if (comb === "1.2D+1.0L") {
+                        wu = 1.2 * Dtotal + 1.0 * Ltotal;
+                        eqComb = "1.2 D + 1.0 L"; sustComb = `1.2(${Dtotal.toFixed(2)}) + 1.0(${Ltotal.toFixed(2)})`; refComb = "Ec. B.2.4-3";
+                    } else {
+                        wu = 1.2 * Dtotal + 1.6 * Ltotal;
+                        eqComb = "1.2 D + 1.6 L"; sustComb = `1.2(${Dtotal.toFixed(2)}) + 1.6(${Ltotal.toFixed(2)})`; refComb = "Ec. B.2.4-2";
+                    }
+
+                    document.getElementById(`txt-p3-${i}`).innerHTML = `
+                        <span class="calc-name">Peso Propio Superficial (D<sub>pp</sub>)</span> = h × &gamma;<sub>c</sub> = ${h_m.toFixed(3)} m × 24.0 kN/m³ = <strong>${wpp.toFixed(2)} kN/m²</strong> <span class="calc-ref">(NSR-10 B.3.2)</span><br>
+                        <span class="calc-name">Carga Muerta Total de Servicio (D)</span> = D<sub>pp</sub> + D<sub>sup</sub> = ${wpp.toFixed(2)} + ${sumDsup.toFixed(2)} = <strong>${Dtotal.toFixed(2)} kN/m²</strong><br>
+                        <span class="calc-name">Carga Viva de Servicio (L)</span> = <strong>${Ltotal.toFixed(2)} kN/m²</strong> <span class="calc-ref">(NSR-10 Tabla B.4.2.1-1)</span><br>
+                        <span class="calc-name">Carga Última Mayorada (w<sub>u</sub>)</span> = ${eqComb} = ${sustComb} = <strong style="color:#e0b13a;">${wu.toFixed(2)} kN/m²</strong> <span class="calc-ref">(NSR-10 B.2.4.2 ${refComb})</span>
+                    `;
+
+                    const ratioLD2D = Dtotal > 0 ? (Ltotal / Dtotal) : 0;
+                    const okRatioLD2D = ratioLD2D <= 2.0001;
+                    const okBeta2D = m_ejes <= 2.0001;
+                    const semiAnchoFC = Math.min(0.25 * L1, 0.25 * L2);
+                    const anchoFC = 2 * semiAnchoFC;
+                    const anchoCentral_DirLarga = Math.max(0.1, L2 - anchoFC);
+                    const anchoCentral_DirCorta = Math.max(0.1, L1 - anchoFC);
+
+                    document.getElementById(`tb-aplicabilidad-${i}`).innerHTML = `
+                        <table class="tabla-verif">
+                            <thead>
+                                <tr><th>Condición de Aplicabilidad (Método Directo / Coeficientes 2D)</th><th>Referencia</th><th>Valor Evaluado</th><th>Estado</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1. Paneles rectangulares con relación L<sub>largo</sub> / L<sub>corto</sub> &le; 2.0</td>
+                                    <td class="num">NSR-10 C.13.6.1.2 / ACI 318-25 8.10.2.2</td>
+                                    <td class="num">m = ${m_ejes.toFixed(2)} &le; 2.00</td>
+                                    <td class="num">${statusTag(okBeta2D)}</td>
+                                </tr>
+                                <tr>
+                                    <td>2. Cargas gravitacionales uniformemente distribuidas</td>
+                                    <td class="num">NSR-10 C.13.6.1.5 / ACI 318-25 8.10.2.5</td>
+                                    <td class="num">w<sub>u</sub> = ${wu.toFixed(2)} kN/m² uniforme</td>
+                                    <td class="num">${statusTag(true)}</td>
+                                </tr>
+                                <tr>
+                                    <td>3. Carga viva de servicio no excede 2 veces la carga muerta (L &le; 2D)</td>
+                                    <td class="num">NSR-10 C.13.6.1.5 / ACI 318-25 8.10.2.6</td>
+                                    <td class="num">L/D = ${ratioLD2D.toFixed(2)} &le; 2.00</td>
+                                    <td class="num">${statusTag(okRatioLD2D)}</td>
+                                </tr>
+                                <tr>
+                                    <td>4. Vigas perimetrales con rigidez relativa &alpha;<sub>f1</sub> l<sub>2</sub>² / (&alpha;<sub>f2</sub> l<sub>1</sub>²) entre 0.2 y 5.0</td>
+                                    <td class="num">NSR-10 C.13.6.1.6 / ACI 318-25 8.10.2.7</td>
+                                    <td class="num">Vigas simétricas cump. rango</td>
+                                    <td class="num">${statusTag(true)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+
+                    document.getElementById(`txt-p5-${i}`).innerHTML = `
+                        <span class="calc-name">Semiancho Franja de Columna (b<sub>fc</sub>/2)</span> = min(0.25 L<sub>1</sub>, 0.25 L<sub>2</sub>) = min(0.25×${L1.toFixed(2)}, 0.25×${L2.toFixed(2)}) = <strong>${semiAnchoFC.toFixed(2)} m</strong> <span class="calc-ref">(ACI 318-25 8.4.1.5)</span><br>
+                        <span class="calc-name">Ancho Total Franja de Columna (b<sub>fc</sub>)</span> = 2 × ${semiAnchoFC.toFixed(2)} m = <strong>${anchoFC.toFixed(2)} m</strong> (en ambas direcciones)<br>
+                        <span class="calc-name">Ancho Franja Central (Sentido Largo)</span> = L<sub>2</sub> - b<sub>fc</sub> = ${L2.toFixed(2)} - ${anchoFC.toFixed(2)} = <strong>${anchoCentral_DirLarga.toFixed(2)} m</strong> <span class="calc-ref">(ACI 318-25 8.4.1.6)</span><br>
+                        <span class="calc-name">Ancho Franja Central (Sentido Corto)</span> = L<sub>1</sub> - b<sub>fc</sub> = ${L1.toFixed(2)} - ${anchoFC.toFixed(2)} = <strong>${anchoCentral_DirCorta.toFixed(2)} m</strong>
+                    `;
+
+                    const Mo_larga = (wu * L2 * Math.pow(ln1, 2)) / 8;
+                    const facNeg = condApoyo === "SIMP" ? 0.0 : (condApoyo === "UN_EXT" ? 0.70 : 0.65);
+                    const facPos = condApoyo === "SIMP" ? 1.0 : (condApoyo === "UN_EXT" ? 0.52 : 0.35);
+                    const Mneg_larga = facNeg * Mo_larga;
+                    const Mpos_larga = facPos * Mo_larga;
+
+                    document.getElementById(`txt-p6-${i}`).innerHTML = `
+                        <span class="calc-name">Momento Estático Dir. Larga (M<sub>0,larga</sub>)</span> = (w<sub>u</sub> × l<sub>2</sub> × l<sub>n1</sub>²) / 8 = (${wu.toFixed(2)} × ${L2.toFixed(2)} × ${ln1.toFixed(2)}²) / 8 = <strong style="color:#e0b13a;">${Mo_larga.toFixed(2)} kN·m</strong> <span class="calc-ref">(NSR-10 Ec. C.13-4 / ACI 318-25 8.10.3.2)</span><br>
+                        <span class="calc-name">Momento Negativo Total (M<sup>-</sup><sub>larga</sub>)</span> = ${facNeg.toFixed(2)} × M<sub>0,larga</sub> = ${facNeg.toFixed(2)} × ${Mo_larga.toFixed(2)} = <strong>${Mneg_larga.toFixed(2)} kN·m</strong> <span class="calc-ref">(NSR-10 C.13.6.3.2 / ACI 318-14 8.10.4.1)</span><br>
+                        <span class="calc-name">Momento Positivo Total (M<sup>+</sup><sub>larga</sub>)</span> = ${facPos.toFixed(2)} × M<sub>0,larga</sub> = ${facPos.toFixed(2)} × ${Mo_larga.toFixed(2)} = <strong>${Mpos_larga.toFixed(2)} kN·m</strong> <span class="calc-ref">(NSR-10 C.13.6.3.2)</span>
+                    `;
+
+                    const ln2_eff = Math.max(ln2, 0.65 * L2);
+                    const Mo_corta = (wu * L1 * Math.pow(ln2_eff, 2)) / 8;
+                    const Mneg_corta = facNeg * Mo_corta;
+                    const Mpos_corta = facPos * Mo_corta;
+
+                    document.getElementById(`txt-p8-${i}`).innerHTML = `
+                        <span class="calc-name">Verificación Luz Libre Mínima (0.65 l<sub>1</sub>)</span> = l<sub>n2</sub> (${ln2.toFixed(2)} m) &ge; 0.65(${L2.toFixed(2)}) = ${(0.65*L2).toFixed(2)} m &rarr; <strong>${statusTag(ln2 >= 0.65*L2)}</strong> <span class="calc-ref">(NSR-10 C.13.6.2.5)</span><br>
+                        <span class="calc-name">Momento Estático Dir. Corta (M<sub>0,corta</sub>)</span> = (w<sub>u</sub> × l<sub>1</sub> × l<sub>n2</sub>²) / 8 = (${wu.toFixed(2)} × ${L1.toFixed(2)} × ${ln2_eff.toFixed(2)}²) / 8 = <strong style="color:#e0b13a;">${Mo_corta.toFixed(2)} kN·m</strong> <span class="calc-ref">(NSR-10 Ec. C.13-4)</span><br>
+                        <span class="calc-name">Momento Negativo Total (M<sup>-</sup><sub>corta</sub>)</span> = ${facNeg.toFixed(2)} × M<sub>0,corta</sub> = ${facNeg.toFixed(2)} × ${Mo_corta.toFixed(2)} = <strong>${Mneg_corta.toFixed(2)} kN·m</strong> <span class="calc-ref">(ACI 318-14 8.10.4.2)</span><br>
+                        <span class="calc-name">Momento Positivo Total (M<sup>+</sup><sub>corta</sub>)</span> = ${facPos.toFixed(2)} × M<sub>0,corta</sub> = ${facPos.toFixed(2)} × ${Mo_corta.toFixed(2)} = <strong>${Mpos_corta.toFixed(2)} kN·m</strong>
+                    `;
+
+                    const fracLosaEnFC = alfa_fm > 0.2 ? 0.15 : 1.00;
+                    const fracVigaEnFC = alfa_fm > 0.2 ? 0.85 : 0.00;
+
+                    const Mneg_FC_larga_tot = 0.80 * Mneg_larga;
+                    const Mneg_Viga_larga = fracVigaEnFC * Mneg_FC_larga_tot;
+                    const Mneg_LosaFC_larga = fracLosaEnFC * Mneg_FC_larga_tot;
+                    const Mneg_Cent_larga = 0.20 * Mneg_larga;
+
+                    const Mpos_FC_larga_tot = 0.60 * Mpos_larga;
+                    const Mpos_LosaFC_larga = fracLosaEnFC * Mpos_FC_larga_tot;
+                    const Mpos_Cent_larga = 0.40 * Mpos_larga;
+
+                    const Mneg_FC_corta_tot = 0.80 * Mneg_corta;
+                    const Mneg_Viga_corta = fracVigaEnFC * Mneg_FC_corta_tot;
+                    const Mneg_LosaFC_corta = fracLosaEnFC * Mneg_FC_corta_tot;
+                    const Mneg_Cent_corta = 0.20 * Mneg_corta;
+
+                    const Mpos_FC_corta_tot = 0.60 * Mpos_corta;
+                    const Mpos_LosaFC_corta = fracLosaEnFC * Mpos_FC_corta_tot;
+                    const Mpos_Cent_corta = 0.40 * Mpos_corta;
+
+                    document.getElementById(`txt-p9-${i}`).innerHTML = `
+                        <span class="calc-name">Reparto Transversal M<sup>-</sup> Dir. Larga</span> = Franja Columna (80%): 0.80 × ${Mneg_larga.toFixed(1)} = <strong>${Mneg_FC_larga_tot.toFixed(1)} kN·m</strong> | Franja Central (20%): <strong>${Mneg_Cent_larga.toFixed(1)} kN·m</strong> <span class="calc-ref">(NSR-10 C.13.6.4.1 / ACI 318-14 8.10.5.1)</span><br>
+                        <span class="calc-name">Sub-reparto Viga vs Losa (Dir. Larga)</span> = Viga Rígida (85%): <strong>${Mneg_Viga_larga.toFixed(1)} kN·m</strong> | Losa en Franja Col. (15%): <strong>${Mneg_LosaFC_larga.toFixed(1)} kN·m</strong> <span class="calc-ref">(NSR-10 C.13.6.5 / ACI 318-14 8.10.5.7)</span><br>
+                        <span class="calc-name">Reparto Transversal M<sup>+</sup> Dir. Larga</span> = Losa en Franja Columna: <strong>${Mpos_LosaFC_larga.toFixed(1)} kN·m</strong> | Franja Central (40%): <strong>${Mpos_Cent_larga.toFixed(1)} kN·m</strong> <span class="calc-ref">(NSR-10 C.13.6.4.4)</span><br><br>
+                        <span class="calc-name">Reparto Transversal M<sup>-</sup> Dir. Corta</span> = Viga Rígida: <strong>${Mneg_Viga_corta.toFixed(1)} kN·m</strong> | Losa en Franja Col. (15%): <strong>${Mneg_LosaFC_corta.toFixed(1)} kN·m</strong> | Franja Central (20%): <strong>${Mneg_Cent_corta.toFixed(1)} kN·m</strong> <span class="calc-ref">(ACI 318-14 8.10.5)</span><br>
+                        <span class="calc-name">Reparto Transversal M<sup>+</sup> Dir. Corta</span> = Losa en Franja Columna: <strong>${Mpos_LosaFC_corta.toFixed(1)} kN·m</strong> | Franja Central (40%): <strong>${Mpos_Cent_corta.toFixed(1)} kN·m</strong>
+                    `;
+
+                    const AsMin2D = rhoMinTemp * 1000 * h;
+                    const sMax2D = Math.min(2 * h, 450);
+
+                    const zonas2D = [
+                        { dir: `Larga (${L1.toFixed(1)}m)`, franja: "Franja de Columna", signo: "Negativo (-)", Mtot: Mneg_LosaFC_larga, ancho: anchoFC },
+                        { dir: `Larga (${L1.toFixed(1)}m)`, franja: "Franja de Columna", signo: "Positivo (+)", Mtot: Mpos_LosaFC_larga, ancho: anchoFC },
+                        { dir: `Larga (${L1.toFixed(1)}m)`, franja: "Franja Central", signo: "Negativo (-)", Mtot: Mneg_Cent_larga, ancho: anchoCentral_DirLarga },
+                        { dir: `Larga (${L1.toFixed(1)}m)`, franja: "Franja Central", signo: "Positivo (+)", Mtot: Mpos_Cent_larga, ancho: anchoCentral_DirLarga },
+                        { dir: `Corta (${L2.toFixed(1)}m)`, franja: "Franja de Columna", signo: "Negativo (-)", Mtot: Mneg_LosaFC_corta, ancho: anchoFC },
+                        { dir: `Corta (${L2.toFixed(1)}m)`, franja: "Franja de Columna", signo: "Positivo (+)", Mtot: Mpos_LosaFC_corta, ancho: anchoFC },
+                        { dir: `Corta (${L2.toFixed(1)}m)`, franja: "Franja Central", signo: "Negativo (-)", Mtot: Mneg_Cent_corta, ancho: anchoCentral_DirCorta },
+                        { dir: `Corta (${L2.toFixed(1)}m)`, franja: "Franja Central", signo: "Positivo (+)", Mtot: Mpos_Cent_corta, ancho: anchoCentral_DirCorta }
+                    ];
+
+                    let rows2D = "";
+                    let zonaGob2D = null;
+                    zonas2D.forEach(z => {
+                        z.Mu_unit = z.Mtot / Math.max(0.2, z.ancho);
+                        z.df = disenarFlexionFranja(z.Mu_unit, 1000, d_prom, fc, fy, beta1, AsMin2D, areaBar, nameBar, sMax2D);
+                        if (!zonaGob2D || z.Mu_unit > zonaGob2D.Mu_unit) zonaGob2D = z;
+                        rows2D += `
+                            <tr>
+                                <td><strong>${z.dir}</strong></td>
+                                <td>${z.franja} (${z.ancho.toFixed(2)}m)</td>
+                                <td class="num">${z.signo}</td>
+                                <td class="num">${z.Mu_unit.toFixed(2)}</td>
+                                <td class="num">${z.df.Rn.toFixed(3)}</td>
+                                <td class="num">${z.df.AsCalc.toFixed(0)}</td>
+                                <td class="num">${AsMin2D.toFixed(0)}</td>
+                                <td class="num"><strong style="color:#e0b13a;">${z.df.spec}</strong> (${z.df.AsProv.toFixed(0)} mm²/m)</td>
+                            </tr>
+                        `;
+                    });
+
+                    document.getElementById(`txt-p10-${i}`).innerHTML = `
+                        <span class="calc-name">Cálculo Tipo en Franja Gobernante (${zonaGob2D.dir} - ${zonaGob2D.franja} ${zonaGob2D.signo})</span>:<br>
+                        <span class="calc-name">Momento por Metro de Ancho (M<sub>u,unit</sub>)</span> = M<sub>franja</sub> / b<sub>franja</sub> = ${zonaGob2D.Mtot.toFixed(2)} kN·m / ${zonaGob2D.ancho.toFixed(2)} m = <strong>${zonaGob2D.Mu_unit.toFixed(2)} kN·m/m</strong> <span class="calc-ref">(Módulo 4, p. 14)</span><br>
+                        <span class="calc-name">Coeficiente Resistencia (R<sub>n</sub>)</span> = M<sub>u,unit</sub> / (&phi; b d<sub>prom</sub>²) = (${zonaGob2D.Mu_unit.toFixed(2)} × 10⁶) / (0.90 × 1000 × ${d_prom.toFixed(1)}²) = <strong>${zonaGob2D.df.Rn.toFixed(3)} MPa</strong><br>
+                        <span class="calc-name">Cuantía (&rho;) y Acero por Flexión (A<sub>s,req</sub>)</span> = &rho; = <strong>${zonaGob2D.df.rho.toFixed(5)}</strong> &rarr; A<sub>s,req</sub> = &rho; b d<sub>prom</sub> = <strong>${zonaGob2D.df.AsCalc.toFixed(1)} mm²/m</strong><br>
+                        <span class="calc-name">Factor Bloque Compresión (&beta;<sub>1</sub>)</span> = ${infoBeta1.condicion} &rarr; ${infoBeta1.formula} = <strong>${beta1.toFixed(3)}</strong> <span class="calc-ref">(NSR-10 C.10.2.7.3)</span><br>
+                        <span class="calc-name">Profundidad Bloque (a) y Eje Neutro (c)</span> = a = <strong>${zonaGob2D.df.a_prov.toFixed(2)} mm</strong> &rarr; c = a / &beta;<sub>1</sub> = ${zonaGob2D.df.a_prov.toFixed(2)} / ${beta1.toFixed(3)} = <strong>${zonaGob2D.df.c_prov.toFixed(2)} mm</strong> (&epsilon;<sub>t</sub> = ${zonaGob2D.df.et.toFixed(4)} &ge; 0.005)<br>
+                        <span class="calc-name">Acero Mínimo Bidireccional (A<sub>s,mín</sub>)</span> = 0.0018 × b × h = 0.0018 × 1000 × ${h} = <strong>${AsMin2D.toFixed(1)} mm²/m</strong> <span class="calc-ref">(ACI 318-25 8.6.1.1 / NSR-10 C.13.3.1)</span><br>
+                        <span class="calc-name">Espaciamiento Máximo Reglamentario (s<sub>máx</sub>)</span> = min(2h, 450 mm) = min(2 × ${h}, 450) = <strong>${sMax2D} mm</strong> &rarr; s<sub>adoptado</sub> = ${zonaGob2D.df.sAdoptado} mm &le; ${sMax2D} mm ${statusTag(zonaGob2D.df.sAdoptado <= sMax2D)} <span class="calc-ref">(ACI 318-25 8.7.2.2 / NSR-10 C.13.3.2)</span>
+                    `;
+
+                    document.getElementById(`tb-resumen2d-${i}`).innerHTML = `
+                        <table class="tabla-verif">
+                            <thead>
+                                <tr><th>Dirección</th><th>Franja (Ancho)</th><th>Momento</th><th>M<sub>u,losa</sub> (kN·m/m)</th><th>R<sub>n</sub> (MPa)</th><th>A<sub>s,req</sub> (mm²/m)</th><th>A<sub>s,mín</sub> (mm²/m)</th><th>Refuerzo Final Adoptado</th></tr>
+                            </thead>
+                            <tbody>${rows2D}</tbody>
+                        </table>
+                    `;
+
+                    // Paso 13: Transferencia a Vigas, Cortante y Deflexiones con inercias desglosadas
+                    const q_pico = wu * (L2 / 2);
+                    const longTramoRecto = Math.max(0, L1 - L2);
+                    const Vu_2d = wu * (L2 / 2) * (1 - Math.pow(L2 / L1, 2) / 3);
+                    const Vc_2d = (0.17 * 1.0 * Math.sqrt(fc) * 1000 * d_prom) / 1000;
+                    const phiVc_2d = 0.75 * Vc_2d;
+                    const defl2D = calcularDeflexionMaciza(ln1, h, d_prom, fc, EcSys, EsSys, Dtotal, Ltotal, zonaGob2D.df.AsProv, 12);
+
+                    document.getElementById(`txt-p13-${i}`).innerHTML = `
+                        <span class="calc-name">Carga Pico sobre Vigas Perimetrales (q<sub>pico</sub>)</span> = w<sub>u</sub> × (L<sub>corto</sub> / 2) = ${wu.toFixed(2)} kN/m² × (${L2.toFixed(2)} m / 2) = <strong style="color:#e0b13a;">${q_pico.toFixed(2)} kN/m</strong> <span class="calc-ref">(NSR-10 C.13.6.8 / Líneas de fluencia a 45°)</span><br>
+                        <span class="calc-name">Distribución sobre Vigas</span> = Vigas Cortas (${L2.toFixed(2)} m): <strong>Triangular</strong> con pico ${q_pico.toFixed(2)} kN/m | Vigas Largas (${L1.toFixed(2)} m): <strong>Trapezoidal</strong> con meseta central de ${longTramoRecto.toFixed(2)} m <span class="calc-ref">(Módulo 4, p. 17)</span><br><br>
+                        <span class="calc-name">Verificación de Cortante en Losa (V<sub>u</sub> vs &phi;V<sub>c</sub>)</span> = V<sub>u</sub> = <strong>${Vu_2d.toFixed(2)} kN/m</strong> &le; &phi;V<sub>c</sub> = 0.75 × 0.17&radic;${fc}(1000)(${d_prom.toFixed(1)})/1000 = <strong>${phiVc_2d.toFixed(2)} kN/m</strong> &rarr; <strong>${statusTag(phiVc_2d >= Vu_2d)}</strong> <span class="calc-ref">(NSR-10 C.11.2.1.1)</span><br><br>
+                        <span class="calc-name">Control de Deflexión en Servicio (E<sub>c</sub> = ${defl2D.Ec.toFixed(2)} MPa, E<sub>s</sub> = ${defl2D.Es.toFixed(0)} MPa, n = ${defl2D.n.toFixed(2)})</span>:<br>
+                        &nbsp;&nbsp;&bull; Inercia Bruta (I<sub>g</sub>) = 1000 × ${h}³ / 12 = <strong>${(defl2D.Ig/1e6).toFixed(2)} × 10⁶ mm⁴</strong> | M<sub>cr</sub> = <strong>${defl2D.Mcr.toFixed(2)} kN·m/m</strong><br>
+                        &nbsp;&nbsp;&bull; Inercia Fisurada Concreto Comprimido (I<sub>cr,1</sub>) = b × c<sub>cr</sub>³ / 3 = 1000 × ${defl2D.c_cr.toFixed(2)}³ / 3 = <strong>${(defl2D.Icr_1_conc/1e6).toFixed(2)} × 10⁶ mm⁴</strong><br>
+                        &nbsp;&nbsp;&bull; Steiner Acero Transformado (I<sub>cr,2</sub>) = n A<sub>s</sub> (d<sub>prom</sub> - c<sub>cr</sub>)² = ${defl2D.nAs.toFixed(1)} × (${d_prom.toFixed(1)} - ${defl2D.c_cr.toFixed(2)})² = <strong>${(defl2D.Icr_2_acero/1e6).toFixed(2)} × 10⁶ mm⁴</strong><br>
+                        &nbsp;&nbsp;&bull; Inercia Fisurada Total (I<sub>cr</sub>) = I<sub>cr,1</sub> + I<sub>cr,2</sub> = <strong>${(defl2D.Icr/1e6).toFixed(2)} × 10⁶ mm⁴</strong> | I<sub>e</sub> = <strong>${(defl2D.Ie/1e6).toFixed(2)} × 10⁶ mm⁴</strong><br>
+                        &nbsp;&nbsp;&bull; Flecha Viva (&delta;<sub>L</sub>) = <strong>${defl2D.delta_L.toFixed(2)} mm</strong> &le; l<sub>n1</sub>/360 (${defl2D.lim360.toFixed(1)} mm) | Flecha Largo Plazo (&Delta;<sub>LP</sub>) = <strong>${defl2D.delta_LP.toFixed(2)} mm</strong> &le; l<sub>n1</sub>/480 (${defl2D.lim480.toFixed(1)} mm) &rarr; <strong>${statusTag(defl2D.delta_LP <= defl2D.lim480)}</strong> <span class="calc-ref">(ACI 318-25 24.2)</span>
+                    `;
+                }
+            });
+
+            tablaResumenHTML += "</tbody></table>";
+
+            if (isGlobal && document.getElementById('val-hmin-critico')) {
+                document.getElementById('contenedor-tabla-resumen').innerHTML = tablaResumenHTML;
+                document.getElementById('val-hmin-critico').innerText = `${hCriticoSistema} mm (Adoptado: ${hGlobal} mm)`;
+                document.getElementById('txt-hmin-critico').innerHTML = `Losa Crítica que gobierna el espesor del sistema: <strong>${etiquetaCritica}</strong>`;
+                
+                if (hGlobal >= hCriticoSistema) {
+                    document.getElementById('resumen-hmin-global').style.borderColor = '#10b981';
+                    document.getElementById('val-hmin-critico').style.color = '#10b981';
+                } else {
+                    document.getElementById('resumen-hmin-global').style.borderColor = '#ef4444';
+                    document.getElementById('val-hmin-critico').style.color = '#ef4444';
+                }
+            }
+        };
+
+        window.ejecutarMemoria = window.ejecutarMemoriaMaciza;
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'luces_estructura' || e.key === 'estructura_completa' || e.key === 'proyectoLosas' || e.key === 'definiciones_sistema') {
+                ejecutarMemoriaMaciza();
+            }
+        });
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.tipo === 'ACTUALIZAR_DEFINICIONES') {
+                ejecutarMemoriaMaciza();
+            }
+        });
+
+        window.onload = ejecutarMemoriaMaciza;
+    </script>
+</body>
+</html>
